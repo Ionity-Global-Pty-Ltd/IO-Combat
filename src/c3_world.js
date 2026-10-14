@@ -131,6 +131,7 @@ class AI {
       if (this.plan !== 'block' || !me.canAct()) { /* fall through to reactive checks */ } else return this.apply(w);
     }
     if (!me.canAct()) {
+      if (['hitstun', 'launched'].includes(me.state) && o.combo >= 3 && me.meter >= 50 && chance(0.03 * (this.lv + 1))) { w.block = true; press('kick'); return this.apply(w); }
       if (me.state === 'jump' && !me.airUsed && dist < 130 && chance(0.25)) press(chance(0.5) ? 'kick' : 'punch');
       return this.apply(w);
     }
@@ -156,6 +157,8 @@ class AI {
     if (me.meter >= 100 && dist < 700 && o.grounded && !o.isInvuln() && ['idle', 'walk', 'crouch', 'special', 'attack', 'getup'].includes(o.state) && chance(0.02 + this.lv * 0.015)) { press('surge'); return this.apply(w); }
     // grab a turtle
     if ((o.state === 'block' || o.state === 'blockstun') && dist < 92 && chance(L.grab * 0.15)) { w.block = true; press('punch'); return this.apply(w); }
+    // signature move
+    if (me.meter >= 25 && chance(this.sigChance(dist, o, seen))) { w.down = true; press('special'); return this.apply(w); }
     if (dist > 135) {
       if (dist > 320 && me.meter >= 30 && chance(L.zone)) { press('special'); return this.apply(w); }
       if (dist > 380 && me.meter >= 70 && chance(L.zone * 0.4)) { press('tele'); return this.apply(w); }
@@ -174,6 +177,19 @@ class AI {
     if (chance(0.02 * (this.lv + 1))) { this.plan = 'block'; this.low = chance(0.3); this.planT = 14; w.block = true; return this.apply(w); }
     if (dist > 80) w[fwdK] = true;
     return this.apply(w);
+  }
+  sigChance(dist, o, seen) {
+    const ty = this.me.d.sig.type;
+    switch (ty) {
+      case 'cyclone': return seen.state === 'jump' && dist < 190 ? this.L.anti * 0.3 : (dist < 110 ? 0.006 : 0);
+      case 'drop': return dist > 160 ? 0.012 : 0;
+      case 'wall': return dist > 250 ? ((projectiles.some(p => p.owner === o) || o.meter >= 30) ? 0.02 : 0.004) : 0;
+      case 'swap': return (this.me.x < WALL_L + 80 || this.me.x > WALL_R - 80) ? 0.012 : dist > 300 ? 0.006 : 0;
+      case 'trap': return dist > 110 && !hazards.some(h => h.owner === this.me && h.type === 'trap') ? 0.012 : 0;
+      case 'pillar': return dist > 180 ? 0.014 : 0.006;
+      case 'seize': return dist < 135 ? ((o.state === 'block' || o.state === 'blockstun') ? 0.05 : 0.008) : 0;
+    }
+    return 0;
   }
   apply(w) {
     PAD_KEYS.forEach(k => this.me.pad.set(k, !!w[k], 'ai'));

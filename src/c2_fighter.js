@@ -4,23 +4,23 @@
  * Presses are buffered for 6 frames so quick taps never get lost. */
 const PAD_KEYS = ['left', 'right', 'up', 'down', 'punch', 'kick', 'block', 'special', 'tele', 'surge'];
 class Pad {
-  constructor() { this.held = {}; this.buf = {}; this.src = {}; this.dn = {}; this.bl = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; }); }
+  constructor() { this.held = {}; this.buf = {}; this.src = {}; this.dn = {}; this.bl = {}; this.age = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; this.age[k] = 99; }); }
   set(k, v, src = 'k') {
     // several sources (keyboard / touch / gamepad / ai) may hold the same key
     const key = k + ':' + src;
-    if (v) { if (!this.src[key]) { this.src[key] = 1; if (!this.held[k]) { this.buf[k] = 6; this.dn[k] = this.held.down; this.bl[k] = this.held.block; } } }
+    if (v) { if (!this.src[key]) { this.src[key] = 1; if (!this.held[k]) { this.buf[k] = 6; this.age[k] = 0; this.dn[k] = this.held.down; this.bl[k] = this.held.block; } } }
     else delete this.src[key];
     this.held[k] = Object.keys(this.src).some(s => s.startsWith(k + ':'));
   }
   press(k) { return this.buf[k] > 0; }
   use(k) { this.buf[k] = 0; }
-  tick() { PAD_KEYS.forEach(k => { if (this.buf[k] > 0) this.buf[k]--; }); }
+  tick() { PAD_KEYS.forEach(k => { if (this.buf[k] > 0) this.buf[k]--; if (this.age[k] < 99) this.age[k]++; }); }
   clear() { this.src = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; }); }
   clearSrc(src) { Object.keys(this.src).forEach(s => { if (s.endsWith(':' + src)) delete this.src[s]; }); PAD_KEYS.forEach(k => { this.held[k] = Object.keys(this.src).some(s => s.startsWith(k + ':')); }); }
 }
 
 /* -------------------------------------------------------------- PARTICLES */
-let particles = [], projectiles = [], floorPix = [], popups = [];
+let particles = [], projectiles = [], floorPix = [], popups = [], hazards = [], rings = [];
 class Particle {
   constructor(o) { Object.assign(this, { g: 0.4, size: 4, life: 30, rot: 0, vr: 0, shape: 'sq', floor: false, drag: 1 }, o); this.max = this.life; }
   update() {
@@ -47,6 +47,7 @@ function burst(x, y, n, colors, o = {}) {
   }
 }
 function popup(x, y, text, color, size = 24) { popups.push({ x, y, text, color, size, life: 50 }); }
+function ring(x, y, color, max = 90, w = 6) { rings.push({ x, y, r: 6, max, color, w, life: 18 }); }
 
 /* ------------------------------------------------------------- PROJECTILE */
 const PROJ = {
@@ -96,24 +97,73 @@ class Projectile {
   }
 }
 
+/* ---------------------------------------------------------------- HAZARDS
+ * Placed by signature moves: CRYO wall, MYCELIA trap, BLAZE pillar. */
+class Hazard {
+  constructor(type, owner, x) { Object.assign(this, { type, owner, x, y: GROUND, t: 0, alive: true, hp: 3, hit: false });
+    this.life = type === 'wall' ? 170 : type === 'trap' ? 420 : 52; this.col = owner.d.glow; }
+  update(G, opp) {
+    this.t++; if (this.t > this.life) { this.alive = false; return; }
+    const hittable = !opp.isInvuln() || (G.state === 'terminate' && opp.state === 'dizzy');
+    if (this.type === 'wall') {
+      for (const p of projectiles) if (p.alive && p.owner !== this.owner && Math.abs(p.x - this.x) < 30 + p.r) {
+        p.alive = false; this.hp--; burst(this.x, p.y, 18, ['#e0f7ff', this.col, '#fff'], { g: 0.2 }); audio.sfx('block'); popup(this.x, p.y - 30, 'BLOCKED', '#bae6fd', 18);
+      }
+      if (this.hp <= 0) { this.alive = false; burst(this.x, GROUND - 80, 30, ['#e0f7ff', this.col], { g: 0.4, floor: true }); }
+      if (!this.hit && hittable && Math.abs(opp.x - this.x) < 42 && opp.y > GROUND - 170) {
+        this.hit = true; G.resolveHit(this.owner, opp, { dmg: 5, kind: 'mid', heavy: true, hs: 16, push: 9, stop: 5, gain: 4, src: 'proj', dir: Math.sign(opp.x - this.x) || 1, el: 'cryo', move: 'sig' });
+      }
+    } else if (this.type === 'trap') {
+      if (this.t > 30 && hittable && opp.grounded && Math.abs(opp.x - this.x) < 52) {
+        this.alive = false; burst(this.x, GROUND - 20, 40, ['#4ade80', '#86efac', '#166534'], { g: 0.1, up: 4, shape: 'c' }); ring(this.x, GROUND - 20, '#4ade80', 120);
+        G.resolveHit(this.owner, opp, { dmg: 9, kind: 'throw', heavy: true, launch: true, hs: 0, push: 3, stop: 8, gain: 6, src: 'proj', dir: Math.sign(opp.x - this.x) || 1, el: 'spore', move: 'sig' });
+      }
+    } else if (this.type === 'pillar') {
+      if (this.t === 26) { audio.sfx('special', { el: 'fire' }); G.shake(10);
+        if (hittable && Math.abs(opp.x - this.x) < 62) G.resolveHit(this.owner, opp, { dmg: 13, kind: 'mid', heavy: true, launch: true, hs: 0, push: 2, stop: 9, gain: 6, src: 'proj', dir: Math.sign(opp.x - this.owner.x) || 1, el: 'fire', move: 'sig' }); }
+      if (this.t > 26 && this.t % 2 === 0) burst(this.x + rnd(-30, 30), GROUND - rnd(0, 300), 2, ['#facc15', '#f97316', '#fff'], { g: -0.3, lmin: 14, lmax: 24 });
+    }
+  }
+  draw(c) {
+    c.save(); const t = this.t;
+    if (this.type === 'wall') {
+      const h = Math.min(170, t * 14); c.globalAlpha = this.t > this.life - 20 ? (this.life - this.t) / 20 : 0.9;
+      c.fillStyle = 'rgba(186,230,253,.55)'; c.strokeStyle = '#e0f7ff'; c.lineWidth = 3; c.shadowColor = this.col; c.shadowBlur = 18;
+      c.beginPath(); c.moveTo(this.x - 26, GROUND); c.lineTo(this.x - 20, GROUND - h); c.lineTo(this.x, GROUND - h - 18); c.lineTo(this.x + 22, GROUND - h + 6); c.lineTo(this.x + 26, GROUND); c.closePath(); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(this.x - 8, GROUND - 20); c.lineTo(this.x + 4, GROUND - h * 0.7); c.stroke();
+    } else if (this.type === 'trap') {
+      const armed = t > 30, blink = armed && t % 30 < 6;
+      c.fillStyle = '#3f2a14'; c.fillRect(this.x - 3, GROUND - 16, 6, 16);
+      c.fillStyle = blink ? '#86efac' : '#7c2d12'; c.beginPath(); c.ellipse(this.x, GROUND - 16, 16, 9, 0, Math.PI, 0); c.fill();
+      if (blink) { c.shadowColor = '#4ade80'; c.shadowBlur = 20; c.fillStyle = 'rgba(74,222,128,.25)'; c.beginPath(); c.arc(this.x, GROUND - 10, 50, 0, 7); c.fill(); }
+    } else {
+      if (t < 26) { const a = 0.3 + 0.5 * Math.abs(Math.sin(t * 0.4)); c.fillStyle = `rgba(249,115,22,${a})`; c.beginPath(); c.ellipse(this.x, GROUND + 4, 62, 12, 0, 0, 7); c.fill(); }
+      else { const k = 1 - (t - 26) / 26, g = c.createLinearGradient(0, GROUND - 420, 0, GROUND);
+        g.addColorStop(0, 'rgba(250,204,21,0)'); g.addColorStop(0.4, '#f97316'); g.addColorStop(1, '#fff7ed');
+        c.globalAlpha = k; c.shadowColor = '#f97316'; c.shadowBlur = 40; c.fillStyle = g; c.fillRect(this.x - 46 * k - 10, GROUND - 420, 92 * k + 20, 420); }
+    }
+    c.restore();
+  }
+}
+
 /* ---------------------------------------------------------------- FIGHTER */
 const POSE_KEYS = ['hipX', 'hipY', 'shX', 'shY', 'hdX', 'hdY', 'bEx', 'bEy', 'bHx', 'bHy', 'fEx', 'fEy', 'fHx', 'fHy', 'bKx', 'bKy', 'bFx', 'bFy', 'fKx', 'fKy', 'fFx', 'fFy', 'rot'];
 class Fighter {
-  constructor(idx, data, x, facing, pad) {
-    this.idx = idx; this.d = data; this.pad = pad; this.scale = data.boss ? 1.3 : 1.18;
+  constructor(idx, data, x, facing, pad, alt = false) {
+    this.idx = idx; this.alt = alt; this.d = alt && data.alt ? Object.assign({}, data, data.alt) : data; this.pad = pad; this.scale = data.boss ? 1.3 : 1.18;
     const s = data.stats; this.pow = s.power / 90; this.spd = s.speed / 90; this.def = s.defense / 90;
     this.rounds = 0; this.reset(x, facing);
   }
   reset(x, facing) {
     Object.assign(this, { x, y: GROUND, vx: 0, vy: 0, facing, hp: 100, shownHp: 100, meter: 40, state: 'idle', f: 0, move: null, hasHit: false,
       crouch: false, air: false, airUsed: false, stun: 0, freeze: 0, poison: 0, burn: 0, combo: 0, comboT: 0, juggle: 0, t: Math.random() * 10,
-      lastTap: { dir: 0, t: -99 }, frame: 0, dmgTaken: 0, invuln: 0, trail: [], deleted: 0, flash: 0, projCd: 0 });
+      lastTap: { dir: 0, t: -99 }, frame: 0, dmgTaken: 0, invuln: 0, trail: [], deleted: 0, flash: 0, projCd: 0, oc: false, sigT: 0 });
     this.pose = this.targetPose(); this.pad && this.pad.clear();
   }
   get grounded() { return this.y >= GROUND; }
   get hurtTop() { return this.y - (this.crouch && this.grounded ? 96 : 150) * this.scale; }
   canAct() { return this.freeze <= 0 && ['idle', 'walk', 'crouch', 'block'].includes(this.state) && this.grounded; }
-  isInvuln() { return this.invuln > 0 || ['knockdown', 'getup', 'ko', 'deleted', 'grabbed', 'victory'].includes(this.state) || (this.state === 'tele' && this.f < 14) || this.juggle >= 4; }
+  isInvuln() { return this.invuln > 0 || ['knockdown', 'getup', 'ko', 'deleted', 'grabbed', 'victory'].includes(this.state) || (this.state === 'tele' && this.f < 14) || this.state === 'breaker' || (this.state === 'sig' && this.d.sig.type === 'cyclone' && this.f < 8) || this.juggle >= 4; }
   addMeter(v) { this.meter = clamp(this.meter + v, 0, 100); }
 
   start(state, move) {
@@ -138,6 +188,13 @@ class Fighter {
     if (this.poison > 0) this.poison--; if (this.burn > 0) this.burn--;
 
     const P = this.pad, fwd = Math.sign(opp.x - this.x) || this.facing;
+    // OVERCLOCK: below 25% health, +12% damage
+    if (G.state === 'fight' && !this.oc && this.hp > 0 && this.hp < 25) { this.oc = true; popup(this.x, this.y - 210, 'OVERCLOCK', '#ff3b5c', 26); audio.sfx('overclock'); }
+    if (this.oc && this.frame % 4 === 0 && !['ko', 'deleted', 'dizzy'].includes(this.state)) particles.push(new Particle({ x: this.x + rnd(-26, 26), y: this.y - rnd(0, 170), vx: 0, vy: rnd(-2, -0.5), size: rnd(2, 4), color: '#ff3b5c', life: 22, g: 0, shape: 'c' }));
+    // ION BREAKER: block + kick while being hit (50 ION)
+    if (['hitstun', 'blockstun', 'launched'].includes(this.state) && G.state === 'fight' && this.meter >= 50 && P.press('kick') && (P.held.block || P.bl.kick)) {
+      P.use('kick'); this.meter -= 50; this.start('breaker'); this.vx = 0; this.freeze = 0; G.breaker(this, opp); return this.physics(G);
+    }
     if (this.freeze > 0) { this.freeze--; this.vx *= 0.7; this.physics(G); return; }
 
     switch (this.state) {
@@ -149,6 +206,7 @@ class Fighter {
         break;
       case 'attack':
         this.activeCheck(opp, G);
+        if (this.state !== 'attack') break; // parried
         if (this.move === 'uplink' && this.f === 6) { this.vy = -5; }
         if (this.f >= MOVES[this.move].total) this.toNeutral();
         break;
@@ -165,12 +223,14 @@ class Fighter {
           burst(this.x, this.y - 80, 22, [this.d.glow, '#fff'], { g: 0, lmin: 12, lmax: 22 });
         }
         if (this.f >= 13) this.activeCheck(opp, G, 'tele');
-        if (this.f >= MOVES.tele.total) this.toNeutral();
+        if (this.state === 'tele' && this.f >= MOVES.tele.total) this.toNeutral();
         break;
       case 'surge':
         if (this.f >= MOVES.surge.a0 && this.f <= MOVES.surge.a1) G.surgeBeam(this, opp);
         if (this.f >= MOVES.surge.total) this.toNeutral();
         break;
+      case 'sig': this.sigUpdate(opp, G); break;
+      case 'breaker': this.vy = Math.min(this.vy, 0); if (this.f >= 22) this.toNeutral(); break;
       case 'hitstun': if (this.f >= this.stun) this.toNeutral(); break;
       case 'blockstun': if (this.f >= this.stun) { this.state = 'block'; this.f = 0; } break;
       case 'dash': if (this.f >= 12) { this.vx = 0; this.toNeutral(); } break;
@@ -188,6 +248,9 @@ class Fighter {
     const close = Math.abs(opp.x - this.x) < 96 && opp.grounded;
     if (P.press('surge') && this.meter >= 100) { P.use('surge'); this.start('surge', 'surge'); this.vx = 0; G.startSurge(this); return; }
     if (P.press('tele') && this.meter >= MOVES.tele.cost) { P.use('tele'); this.start('tele', 'tele'); this.vx = 0; return; }
+    if (P.press('special') && (P.held.down || P.dn.special) && this.meter >= MOVES.sig.cost && !(this.d.sig.type === 'trap' && hazards.some(h => h.owner === this && h.type === 'trap'))) {
+      P.use('special'); this.start('sig', 'sig'); this.vx = 0; this.crouch = false; audio.sfx('sig'); popup(this.x, this.y - 220 * this.scale, this.d.sig.name, this.d.glow, 22); return;
+    }
     if (P.press('special') && this.meter >= MOVES.special.cost && this.projCd <= 0 && !projectiles.some(p => p.owner === this)) {
       P.use('special'); this.start('special', 'special'); this.vx = 0; this.projCd = 20; audio.sfx('special', { el: this.d.element }); return;
     }
@@ -217,7 +280,64 @@ class Fighter {
     else { this.vx = 0; this.state = 'idle'; }
   }
 
-  toNeutral() { this.move = null; this.f = 0; this.state = this.grounded ? 'idle' : 'jump'; if (!this.grounded) this.airUsed = true; }
+  sigUpdate(opp, G) {
+    const type = this.d.sig.type, f = this.f, dir = this.facing;
+    const hitBox = (x0, x1, y0, y1, h) => {
+      if (this.hasHit) return; const hittable = !opp.isInvuln() || (G.state === 'terminate' && opp.state === 'dizzy'); if (!hittable) return;
+      const s = this.scale, a = this.x + dir * x0 * s, b = this.x + dir * x1 * s, L = Math.min(a, b), R = Math.max(a, b);
+      if (R < opp.x - 30 || L > opp.x + 30 || this.y + y1 * s < opp.hurtTop || this.y + y0 * s > opp.y) return;
+      this.hasHit = true; G.resolveHit(this, opp, Object.assign({ src: 'melee', dir, el: this.d.element, move: 'sig', heavy: true, hs: 18, push: 7, stop: 8, gain: 6 }, h));
+    };
+    switch (type) {
+      case 'cyclone': // rising spinning axe: invulnerable start, launches
+        if (f === 3) { this.vy = -14; this.vx = dir * 3.5; }
+        if (f >= 4 && f <= 24) { hitBox(-50, 96, -240, -10, { dmg: 12, kind: 'mid', launch: true }); if (f % 3 === 0) burst(this.x, this.y - 100, 3, [this.d.glow, '#fff'], { g: 0, smin: 3, smax: 7 }); }
+        if (f > 10 && this.grounded) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'drop': // leap above the rival, dive, shockwave on landing
+        if (f === 2) { this.vy = -17; this.vx = clamp((opp.x - this.x) / 34, -11, 11); }
+        if (f === 22) { this.vy = 24; this.vx = clamp((opp.x - this.x) / 9, -14, 14); }
+        if (f > 22 && !this.grounded) hitBox(-20, 70, -90, 0, { dmg: 10, kind: 'overhead' });
+        if (f > 22 && this.grounded && !this.landed) {
+          this.landed = true; this.vx = 0; G.shake(12); ring(this.x, GROUND - 6, this.d.glow, 160, 8); audio.sfx('heavy');
+          burst(this.x, GROUND - 6, 26, [this.d.glow, '#fff'], { g: 0.3, up: 3 });
+          if (!this.hasHit && opp.grounded && Math.abs(opp.x - this.x) < 160 && !opp.isInvuln()) { this.hasHit = true; G.resolveHit(this, opp, { src: 'proj', dir: Math.sign(opp.x - this.x) || 1, el: this.d.element, move: 'sig', heavy: true, dmg: 11, kind: 'low', knock: true, hs: 0, push: 6, stop: 8, gain: 6 }); }
+        }
+        if (this.landed && (this.sigT = (this.sigT || 0) + 1) > 12) { this.landed = false; this.sigT = 0; (this.state === 'sig' && this.toNeutral()); }
+        break;
+      case 'wall':
+        if (f === 10) { hazards = hazards.filter(h => !(h.owner === this && h.type === 'wall')); hazards.push(new Hazard('wall', this, clamp(this.x + dir * 110, WALL_L, WALL_R))); audio.sfx('special', { el: 'cryo' }); }
+        if (f >= MOVES.sig.total) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'swap':
+        if (f === 8 && opp.state !== 'deleted') {
+          const a = this.x; this.x = opp.x; opp.x = a; this.facing = Math.sign(opp.x - this.x) || 1;
+          burst(this.x, this.y - 90, 24, [this.d.glow, '#000'], { g: 0 }); burst(opp.x, opp.y - 90, 24, [this.d.glow, '#000'], { g: 0 });
+          if (!opp.isInvuln() && opp.grounded && ['idle', 'walk', 'crouch', 'block', 'attack', 'special'].includes(opp.state)) { opp.state = 'hitstun'; opp.f = 0; opp.stun = 24; opp.move = null; popup(opp.x, opp.y - 200, 'SWAPPED', '#c084fc', 20); }
+          audio.sfx('tele');
+        }
+        if (f >= 22) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'trap':
+        if (f === 10) { hazards.push(new Hazard('trap', this, clamp(this.x + dir * 170, WALL_L, WALL_R))); audio.sfx('special', { el: 'spore' }); }
+        if (f >= MOVES.sig.total) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'pillar':
+        if (f === 8) hazards.push(new Hazard('pillar', this, opp.x));
+        if (f >= MOVES.sig.total) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'seize': // command grab with long reach, steals ION
+        if (f >= 5 && f <= 9 && !this.hasHit && opp.grounded && !opp.isInvuln() && Math.abs(opp.x - this.x) < 140 && !['hitstun', 'launched'].includes(opp.state)) {
+          this.hasHit = true; const steal = Math.min(35, opp.meter); opp.meter -= steal; this.addMeter(steal);
+          popup(opp.x, opp.y - 200, `SEIZED ${steal | 0} ION`, '#ffd166', 20); audio.sfx('grab');
+          G.resolveHit(this, opp, { src: 'melee', dir, el: 'audit', move: 'sig', heavy: true, dmg: 14, kind: 'throw', knock: true, hs: 0, push: 6, stop: 10, gain: 4 });
+        }
+        if (f >= 30) (this.state === 'sig' && this.toNeutral());
+        break;
+    }
+  }
+
+  toNeutral() { this.landed = false; this.sigT = 0; this.move = null; this.f = 0; this.state = this.grounded ? 'idle' : 'jump'; if (!this.grounded) this.airUsed = true; }
 
   physics(G) {
     if (this.state === 'grabbed') return;
@@ -237,7 +357,7 @@ class Fighter {
     if (['hitstun', 'blockstun'].includes(this.state)) this.vx *= 0.86;
     if (this.state === 'knockdown' || this.state === 'ko' || this.state === 'getup') this.vx *= 0.8;
     this.x = clamp(this.x, WALL_L, WALL_R);
-    if (this.state === 'dash' || this.state === 'tele' || this.state === 'surge') { if (this.frame % 2 === 0) this.trail.push({ x: this.x, y: this.y, pose: Object.assign({}, this.pose), facing: this.facing, a: 0.45 }); }
+    if (['dash', 'tele', 'surge', 'sig', 'breaker'].includes(this.state)) { if (this.frame % 2 === 0) this.trail.push({ x: this.x, y: this.y, pose: Object.assign({}, this.pose), facing: this.facing, a: 0.45 }); }
     this.trail.forEach(t => t.a -= 0.05); this.trail = this.trail.filter(t => t.a > 0);
   }
 
@@ -291,6 +411,17 @@ class Fighter {
         break;
       }
       case 'special': { const a = mf > 6; Object.assign(P, { shX: a ? 14 : -4, hdX: a ? 16 : 0, fEx: a ? 48 : 10, fEy: -118, fHx: a ? 86 : 0, fHy: -120, bEx: a ? 40 : -10, bEy: -110, bHx: a ? 78 : -4, bHy: -112, fKx: 30, fFx: 44, bFx: -36 }); break; }
+      case 'sig': {
+        const ty = this.d.sig.type;
+        if (ty === 'cyclone') { const a = this.t * 9; Object.assign(P, { fEx: Math.cos(a) * 40, fEy: -130 + Math.sin(a) * 10, fHx: Math.cos(a) * 80, fHy: -150, bEx: -Math.cos(a) * 40, bEy: -128, bHx: -Math.cos(a) * 78, bHy: -146, fKx: 16, fKy: -54, fFx: 8, fFy: -14, bKx: -12, bKy: -50, bFx: -18, bFy: -10 }); }
+        else if (ty === 'drop') { if (mf > 22) Object.assign(P, { fKx: 34, fKy: -50, fFx: 60, fFy: -4, bKx: -20, bKy: -70, bFx: -40, bFy: -50, fEx: 30, fEy: -150, fHx: 40, fHy: -190, bEx: -20, bEy: -150, bHx: -26, bHy: -190 });
+          else Object.assign(P, { hipY: -84, bKx: -10, bKy: -60, bFx: -30, bFy: -34, fKx: 24, fKy: -66, fFx: 14, fFy: -30, fEx: 10, fEy: -170, fHx: 20, fHy: -210, bEx: -10, bEy: -168, bHx: 0, bHy: -210 }); }
+        else if (ty === 'seize') Object.assign(P, { shX: 16, hdX: 18, fEx: 56, fEy: -116, fHx: 112, fHy: -120, bEx: 44, bEy: -104, bHx: 96, bHy: -100, fKx: 34, fFx: 52, bFx: -40 });
+        else if (ty === 'trap' || ty === 'pillar') { crouchify(); Object.assign(P, { fEx: 40, fEy: -60, fHx: 70, fHy: -10, bEx: 20, bEy: -64, bHx: 50, bHy: -14 }); }
+        else Object.assign(P, { shX: 12, hdX: 14, fEx: 46, fEy: -128, fHx: 80, fHy: -140, bEx: 38, bEy: -112, bHx: 70, bHy: -118, fKx: 30, fFx: 44, bFx: -36 });
+        break;
+      }
+      case 'breaker': Object.assign(P, { fEx: 40, fEy: -160, fHx: 70, fHy: -196, bEx: -40, bEy: -160, bHx: -70, bHy: -196, fKx: 30, fFx: 46, bKx: -30, bFx: -46, hdY: -156 }); break;
       case 'tele': Object.assign(P, { shX: 10, hdX: 14, fKx: 46, fKy: -96, fFx: 112, fFy: -112, bEx: -24, bEy: -112, bHx: -40, bHy: -96 }); break;
       case 'surge': { const charge = mf < MOVES.surge.freeze; Object.assign(P, charge ? { fEx: 10, fEy: -170, fHx: 20, fHy: -210, bEx: -10, bEy: -168, bHx: 0, bHy: -210, hdY: -150, bKx: -30, bFx: -40, fKx: 30, fFx: 40 }
         : { shX: 14, hdX: 16, fEx: 50, fEy: -116, fHx: 94, fHy: -116, bEx: 48, bEy: -106, bHx: 90, bHy: -108, bKx: -30, bFx: -44, fKx: 32, fFx: 48 }); break; }
@@ -342,7 +473,8 @@ class Fighter {
     if (P.rot) { c.translate(0, -16); c.rotate(P.rot); }
     const col = (v) => o.white ? '#ffffff' : (o.ghost ? d.glow : v);
     if (o.derez) c.globalAlpha = clamp(1 - o.derez / 60, 0, 1);
-    if (this.state === 'surge' || this.state === 'special' || (this.meter >= 100 && G_STATE_FIGHT())) { c.shadowColor = d.glow; c.shadowBlur = this.state === 'surge' ? 30 : 14; }
+    if (['surge', 'special', 'sig', 'breaker'].includes(this.state) || (this.meter >= 100 && G_STATE_FIGHT())) { c.shadowColor = d.glow; c.shadowBlur = this.state === 'surge' || this.state === 'breaker' ? 30 : 14; }
+    if (this.oc && !o.ghost && !o.white && this.frame % 20 < 10) { c.shadowColor = '#ff3b5c'; c.shadowBlur = 18; }
     c.lineCap = 'round'; c.lineJoin = 'round';
     const limb = (x1, y1, x2, y2, x3, y3, w, cu, cl) => {
       c.strokeStyle = '#03070d'; c.lineWidth = w + 5; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineTo(x3, y3); c.stroke();

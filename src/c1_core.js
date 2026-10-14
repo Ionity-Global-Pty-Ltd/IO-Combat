@@ -1,10 +1,10 @@
 <script>
 'use strict';
 /* =========================================================================
- * IO-COMBAT v1.0.0 · GME-2026-10-011 · Ionity (Pty) Ltd · AEDI · Policy 986 AED
+ * IO-COMBAT v1.1.0 · GME-2026-10-011 · Ionity (Pty) Ltd · AEDI · Policy 986 AED
  * Original 2D arcade fighter. Vanilla JS, one file, no build step.
  * ========================================================================= */
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const W = 1280, H = 720, GROUND = 604, WALL_L = 60, WALL_R = 1220;
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -16,8 +16,8 @@ const QS = new URLSearchParams(location.search);
 /* ---------------------------------------------------------------- STORAGE */
 const STORE_KEY = 'iocombat.v1';
 const DEFAULT_SAVE = {
-  settings: { diff: 1, rounds: 2, timer: 99, sfx: 70, music: 45, shake: true, reduceFlash: false, touch: 'auto', muted: false, musicOn: true },
-  stats: { wins: 0, losses: 0, perfects: 0, deletes: 0, arcadeClears: 0, bestStreak: 0, streak: 0, played: 0 },
+  settings: { diff: 1, rounds: 2, timer: 99, sfx: 70, music: 45, shake: true, reduceFlash: false, touch: 'auto', muted: false, musicOn: true, autoFull: true, voice: true, cam: true },
+  stats: { wins: 0, losses: 0, perfects: 0, deletes: 0, arcadeClears: 0, bestStreak: 0, streak: 0, played: 0, survivalBest: 0, parries: 0 },
   unlocked: { auditor: false }
 };
 function loadSave() {
@@ -106,6 +106,10 @@ class Audio {
       case 'gong': [98, 147, 196, 294].forEach((f, i) => this.tone(t, i % 2 ? 'triangle' : 'sine', f, f * 0.97, 1.4, 0.22 / (i + 1))); break;
       case 'ko': this.tone(t, 'sawtooth', 300, 40, 0.9, 0.4); this.noise(t, 0.8, 0.4, 'lowpass', 2000, 80); break;
       case 'delete': for (let i = 0; i < 10; i++) this.tone(t + i * 0.045, 'square', 1600 - i * 140, 0, 0.05, 0.16); this.tone(t + 0.45, 'sine', 80, 30, 0.8, 0.6); break;
+      case 'parry': this.tone(t, 'square', 1320, 0, 0.05, 0.2); this.tone(t + 0.05, 'square', 1980, 0, 0.12, 0.2); this.noise(t, 0.1, 0.2, 'highpass', 6000); break;
+      case 'breaker': this.tone(t, 'sine', 200, 1200, 0.25, 0.4); this.noise(t, 0.4, 0.4, 'bandpass', 3000, 300); break;
+      case 'overclock': this.tone(t, 'sawtooth', 110, 880, 0.35, 0.25); break;
+      case 'sig': this.tone(t, 'square', 440, 880, 0.08, 0.18); this.tone(t + 0.08, 'triangle', 880, 220, 0.25, 0.2); break;
       case 'tick': this.tone(t, 'square', 1200, 0, 0.03, 0.08); break;
     }
   }
@@ -147,37 +151,62 @@ const TRACKS = {
     bass: 'xx.xx.xox.xx.xo.', arp: '0..1..2..3..2.1.', kick: 'x..x..x.x..x..x.', snare: '....x.......x..x', hat: 'xxxxxxxxxxxxxxxx' }
 };
 const audio = new Audio();
+/* announcer voice (Web Speech API, robotic low pitch) */
+function announce(text) {
+  if (!SAVE.settings.voice || SAVE.settings.muted || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.toLowerCase().replace('io-', 'eye oh ').replace('-443', ' four four three'));
+    u.pitch = 0.35; u.rate = 0.92; u.volume = Math.min(1, SAVE.settings.sfx / 70);
+    const v = speechSynthesis.getVoices().find(v => /en(-|_)(GB|US|ZA)/i.test(v.lang)); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) { /* speech unavailable */ }
+}
 
 /* ---------------------------------------------------------------- ROSTER */
 const FIGHTERS = [
   { id: 'ioman', name: 'IO-MAN', title: 'Axe of Ions · Hero of the Grid', element: 'ion',
     c1: '#00c6ff', c2: '#1658A4', c3: '#0b1a2b', skin: '#d9b99b', glow: '#00c6ff', emblem: 'IO',
     proj: 'ION AXE', tele: 'PACKET DASH', surge: 'GET OVER IT', stats: { power: 90, speed: 90, defense: 88 },
-    quote: 'Chop first. Ask questions in the logs.' },
+    quote: 'Chop first. Ask questions in the logs.',
+    sig: { name: 'AXE CYCLONE', type: 'cyclone' }, alt: { c1: '#e2e8f0', c2: '#0f766e', c3: '#0b1a2b', glow: '#5eead4' },
+    taunt: "Let's get over it. Together, or one of us at a time.", win: "Door's open. Walk through it next time." },
   { id: 'volta', name: 'VOLTA', title: 'Edge Node Sentinel', element: 'volt',
     c1: '#facc15', c2: '#6d28d9', c3: '#1c1033', skin: '#c99a7a', glow: '#fde047', emblem: 'V',
     proj: 'EDGE ARC', tele: 'SPARK HOP', surge: 'GRID OVERLOAD', stats: { power: 84, speed: 98, defense: 80 },
-    quote: 'Latency is a choice. I chose zero.' },
+    quote: 'Latency is a choice. I chose zero.',
+    sig: { name: 'THUNDER DROP', type: 'drop' }, alt: { c1: '#38bdf8', c2: '#be123c', c3: '#1a0a14', glow: '#7dd3fc' },
+    taunt: "I route around obstacles. You are an obstacle.", win: "Packet delivered. Zero loss on my side." },
   { id: 'cryo', name: 'CRYO-CORE', title: 'Coolant Daemon of the Server Hall', element: 'cryo',
     c1: '#7dd3fc', c2: '#0e7490', c3: '#0b2530', skin: '#e3cfc2', glow: '#bae6fd', emblem: '*',
     proj: 'COOLANT LANCE', tele: 'FROST BLINK', surge: 'ABSOLUTE IDLE', stats: { power: 86, speed: 84, defense: 96 },
-    quote: 'Every system runs better at minus forty.' },
+    quote: 'Every system runs better at minus forty.',
+    sig: { name: 'GLACIER WALL', type: 'wall' }, alt: { c1: '#f0abfc', c2: '#6b21a8', c3: '#1d0b2b', glow: '#f5d0fe' },
+    taunt: "Your fans are spinning. Let me cool you down.", win: "Thermal event resolved. You may reboot." },
   { id: 'null', name: 'NULL', title: 'Void Pointer Assassin', element: 'void',
     c1: '#a855f7', c2: '#2e1065', c3: '#0f0a1a', skin: '#2a2238', glow: '#c084fc', emblem: '0',
     proj: 'SEGFAULT ORB', tele: 'NULL BLINK', surge: 'UNDEFINED', stats: { power: 88, speed: 94, defense: 82 },
-    quote: 'You were never referenced.' },
+    quote: 'You were never referenced.',
+    sig: { name: 'VOID SWAP', type: 'swap' }, alt: { c1: '#ef4444', c2: '#18181b', c3: '#09090b', glow: '#fca5a5' },
+    taunt: "Your position is just a pointer. I can change it.", win: "Dereferenced." },
   { id: 'mycelia', name: 'MYCELIA', title: 'Spore Witch of the Root', element: 'spore',
     c1: '#4ade80', c2: '#7c2d12', c3: '#14281a', skin: '#b9d8b0', glow: '#86efac', emblem: '§',
     proj: 'SPORE CLOUD', tele: 'ROOT WALK', surge: 'GREAT BLOOM', stats: { power: 85, speed: 88, defense: 90 },
-    quote: 'The network was ours before you wired it.' },
+    quote: 'The network was ours before you wired it.',
+    sig: { name: 'SPORE TRAP', type: 'trap' }, alt: { c1: '#fbbf24', c2: '#3f6212', c3: '#1a1f0a', glow: '#fde68a' },
+    taunt: "Watch where you step. The root remembers.", win: "You were compost all along." },
   { id: 'blaze', name: 'BLAZE-443', title: 'Firewall Gate Guardian', element: 'fire',
     c1: '#f97316', c2: '#7f1d1d', c3: '#2a0d07', skin: '#c58d6a', glow: '#fdba74', emblem: '443',
     proj: 'PORT BLAST', tele: 'FLARE STEP', surge: 'DENY ALL', stats: { power: 97, speed: 80, defense: 90 },
-    quote: 'Request denied. Permanently.' },
+    quote: 'Request denied. Permanently.',
+    sig: { name: 'FLAME PILLAR', type: 'pillar' }, alt: { c1: '#e5e7eb', c2: '#1d4ed8', c3: '#0b1222', glow: '#93c5fd' },
+    taunt: "No ticket, no entry. And you have no ticket.", win: "Connection refused. Have a nice day." },
   { id: 'auditor', name: 'THE AUDITOR', title: 'Governance Overlord · Final Boss', element: 'audit', boss: true,
     c1: '#ffd166', c2: '#1f2937', c3: '#0b0f17', skin: '#9ca3af', glow: '#ffe08a', emblem: '986',
     proj: 'COMPLIANCE BEAM', tele: 'SUBPOENA', surge: 'FULL AUDIT', stats: { power: 100, speed: 86, defense: 100 },
-    quote: 'Policy 986 applies to you too.' }
+    quote: 'Policy 986 applies to you too.',
+    sig: { name: 'ASSET SEIZURE', type: 'seize' }, alt: { c1: '#e5e7eb', c2: '#7f1d1d', c3: '#140808', glow: '#fecaca' },
+    taunt: "Every frame you waste is logged.", win: "Audit complete. You failed every control." }
 ];
 const ELEMENT_INFO = {
   ion: { label: 'ION', col: '#00c6ff' }, volt: { label: 'VOLT', col: '#facc15' }, cryo: { label: 'CRYO', col: '#7dd3fc' },
@@ -205,5 +234,6 @@ const MOVES = {
   grab:     { total: 24, a0: 3, a1: 5,  dmg: 12, kind: 'throw', x0: 0, x1: 86, y0: -150, y1: 0, hs: 0, push: 0, stop: 8, gain: 10, heavy: true },
   special:  { total: 30, spawn: 10, cost: 30 },
   tele:     { total: 30, a0: 15, a1: 21, dmg: 11, kind: 'mid', x0: 0, x1: 104, y0: -150, y1: -60, hs: 18, push: 9, stop: 7, gain: 6, heavy: true, cost: 40 },
+  sig:      { total: 28, cost: 25 },
   surge:    { total: 78, freeze: 44, a0: 46, a1: 62, dmg: 30, kind: 'mid', cost: 100 }
 };

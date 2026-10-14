@@ -6,7 +6,13 @@
 <title>IO-COMBAT · Ionity Grid Tournament</title>
 <meta name="description" content="IO-COMBAT: a free 2D arcade fighting game by Ionity. Six original fighters, an Arcade ladder with a boss, versus AI, 2-player local, and a training mode. Play at ionity.fun/combat.">
 <meta name="author" content="Johan Wilhelm van Antwerp · Ionity (Pty) Ltd · AEDI">
-<meta name="theme-color" content="#0d1b2a">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IO-COMBAT">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta property="og:title" content="IO-COMBAT · Ionity Grid Tournament">
 <meta property="og:description" content="Original 2D arcade fighter by Ionity. Arcade · Versus · 2P Local · Training. Play free at ionity.fun/combat">
 <meta property="og:type" content="website">
@@ -15,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://www.ionity.fun/combat/banner_og_1200x630.png">
 <!--
-  IO-COMBAT · Document ID GME-2026-10-011 · Version 1.0.0
+  IO-COMBAT · Document ID GME-2026-10-011 · Version 1.1.0
   Author: Johan Wilhelm van Antwerp | Ionity (Pty) Ltd | AEDI (Antwerp Ecosystems Designs Ionity)
   Governance: Policy 986 AED | License: AED 900 | CC BY-NC-SA 4.0 where stated
   (c) 2018-2026 Antwerp Designs | Ionity (Pty) Ltd - All Rights Reserved - TM2
@@ -35,10 +41,10 @@
   --display:'Orbitron','Arial Black',system-ui,sans-serif; --body:'Rajdhani','Segoe UI',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;overflow:hidden;background:#000}
 body{background:radial-gradient(ellipse at 50% -10%,#123a66 0%,#0d1b2a 38%,#060c15 75%);background-color:#060c15;color:var(--text);
   font-family:var(--body);overflow-x:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
-  display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:8px 8px 0}
+  position:fixed;inset:0;overscroll-behavior:none}
 a{color:var(--ion);text-decoration:none} a:hover{text-decoration:underline}
 button{font-family:var(--display);cursor:pointer}
 .bar{width:100%;max-width:1280px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
@@ -59,11 +65,19 @@ button{font-family:var(--display);cursor:pointer}
 .btn.big{font-size:15px;padding:12px 22px}
 .btns{display:flex;flex-wrap:wrap;gap:6px}
 
-#stage{position:relative;width:100%;max-width:1280px;margin-top:8px;border-radius:10px;overflow:hidden;
-  border:2px solid #17324f;box-shadow:0 0 0 1px #04101c,0 0 40px rgba(0,198,255,.18),inset 0 0 30px #000;background:#04080f}
-#stage canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#04080f;touch-action:none}
-#stage:fullscreen{max-width:none;border:0;border-radius:0;display:flex;align-items:center;justify-content:center;background:#000}
-#stage:fullscreen canvas{width:auto;height:100%;max-width:100%;max-height:100vh;aspect-ratio:16/9}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 40%,#0b1a2b 0%,#03070d 70%,#000 100%)}
+#stage canvas{display:block;width:min(100vw,calc(100dvh*16/9));height:min(100dvh,calc(100vw*9/16));background:#04080f;touch-action:none;
+  box-shadow:0 0 60px rgba(0,198,255,.12)}
+#tools{position:absolute;top:max(6px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:70;display:flex;gap:6px;transition:opacity .4s}
+#tools.dim{opacity:0;pointer-events:none}
+#tools .btn{padding:6px 10px;font-size:12px;background:rgba(10,26,44,.72);backdrop-filter:blur(3px)}
+#brandTag{position:absolute;top:max(8px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));z-index:70;display:flex;align-items:center;gap:8px;transition:opacity .4s}
+#brandTag svg{height:16px;width:auto}#brandTag b{font-family:var(--display);font-size:13px;letter-spacing:2px;color:#00c6ff}
+#brandTag.dim{opacity:0}
+.foot{margin-top:14px;font-size:12px;color:var(--mute);text-align:center}
+.foot .links{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center}
+.foot .legal{font-size:10.5px;color:#5d7894;margin-top:4px}
 .ov{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;
   background:radial-gradient(ellipse at center,rgba(13,27,42,.88),rgba(4,8,15,.97));overflow:auto}
 .hidden{display:none!important}
@@ -151,9 +165,6 @@ kbd{font-family:ui-monospace,Consolas,monospace;background:#12253a;border:1px so
 #rotate{z-index:60;text-align:center}
 #rotate .ph{font-size:56px;animation:rot 1.8s ease-in-out infinite}@keyframes rot{50%{transform:rotate(90deg)}}
 
-footer.bar{margin:8px 0 10px;font-size:12px;color:var(--mute);justify-content:center;text-align:center;flex-direction:column;gap:4px}
-footer .links{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center}
-footer .legal{font-size:11px;color:#5d7894}
 @media (max-width:760px){
   .cols{grid-template-columns:1fr}
   .brand .s{display:none}
@@ -161,29 +172,23 @@ footer .legal{font-size:11px;color:#5d7894}
   #title .menu{grid-template-columns:1fr 1fr}
 }
 @media (max-height:520px) and (orientation:landscape){
-  body{padding:0}
-  header.bar,footer.bar{display:none}
-  #stage{margin:0;border:0;border-radius:0;max-width:calc(100vh*16/9)}
+  #title .wm{font-size:clamp(30px,11vh,90px)}
+  #title .menu{margin-top:10px;gap:6px}#title .menu .btn{padding:8px 10px;font-size:12px}
+  .foot{display:none}
 }
 </style>
 </head>
 <body>
-<header class="bar">
-  <div class="brand">
-    <svg viewBox="0 0 2759 760" aria-label="IONITY"><path transform="translate(0,760) scale(1,-1)" fill="#00c6ff" d="M953 748c-1 0-5-1-8-1-3 0-7-1-9-1-2-1-4-2-5-2 0 0-3-1-6-2-3-2-7-3-8-3-1-1-4-2-5-3-2-2-7-5-10-8-7-4-18-14-18-16 0 0-2-3-4-5-2-2-4-5-5-6-5-9-11-19-11-20 0-1-1-3-2-4-2-5-5-18-7-30-3-22-5-632-2-634 3-2 84-1 85 0 1 1 1 86 1 304l0 302 2 8c5 16 12 20 28 20 10 0 11 0 15-2 2-2 5-5 7-6 2-1 4-2 5-3 0-1 2-3 4-4 2-2 4-5 5-7 1-2 2-4 3-4 0 0 1-1 1-2 1-1 3-5 6-10 3-4 6-9 8-11 1-2 3-5 4-7 1-2 2-4 3-5 0-1 2-4 4-8 7-10 7-10 8-14 1-1 2-3 3-3 1-1 2-2 2-3 1-2 2-5 4-7 2-2 4-6 5-8 2-5 10-17 11-17 1-1 1-2 1-3 0-1 1-2 2-3 1-1 2-3 3-4 0-2 2-6 4-8 3-5 4-6 9-15 2-4 4-7 5-8 0-1 1-2 1-3 0 0 1-2 3-5 2-2 3-4 3-5 0 0 0-1 1-1 0 0 1-2 2-4 1-2 2-4 3-5 0-1 3-5 5-8 2-4 4-8 5-10 1-1 3-4 4-6 4-7 5-10 8-14 2-2 4-6 6-9 2-4 4-7 4-7 2-2 6-9 6-10 0 0 2-3 4-6 2-3 4-7 5-9 1-2 2-4 3-5 0-1 1-3 2-4 3-7 10-20 12-22 3-4 10-17 13-22 1-2 2-4 2-4 0 0 1-1 2-3 1-3 5-9 6-10 1-1 2-3 3-5 1-2 2-3 2-3 1 0 1-1 2-2 0-2 1-3 1-3 0 0 1-1 2-3 1-2 3-6 5-9 2-3 5-8 6-11 2-3 3-6 4-7 2-2 6-8 7-13 1-1 3-5 5-8 3-4 6-10 8-13 1-3 3-7 5-8 2-3 7-13 11-19 0-2 2-5 4-7 1-3 2-5 3-7 1-3 6-10 8-11 0-1 1-2 1-2 0-1 1-3 3-5 1-1 2-3 2-4 0 0 2-3 4-7 9-13 20-15 25-4 1 3 2 567 0 570 0 2-5 2-40 2-22 0-40 0-41-1-1 0-1-31-1-144 0-110-1-143-2-144-1 0-5 8-5 10 0 1-1 2-1 3-1 1-2 3-3 4 0 2-1 4-1 5-1 1-2 3-2 4-1 3-6 16-7 17 0 1-1 3-1 5-1 1-2 3-2 4-1 1-2 3-3 4 0 2-1 4-1 4-1 1-4 8-4 10 0 1 0 2-1 3-1 1-2 3-11 19-3 7-6 13-7 13-1 1-1 2-1 3 0 1-3 7-6 13-3 6-6 12-7 13 0 2-1 3-1 4-1 0-3 4-5 8-8 16-21 42-23 44-3 6-6 11-10 19-2 4-5 8-5 8-1 0-1 1-1 1 0 1-2 4-4 8-3 3-5 6-5 7 0 1-15 20-20 25-2 3-6 6-8 8-1 2-4 4-5 5-1 1-4 3-6 5-2 2-4 4-5 4 0 0-3 2-5 4-3 2-7 4-8 5-8 4-16 8-20 9-3 1-7 2-8 3-1 0-4 1-6 1-2 0-5 1-6 2-4 2-47 1-51-1zM418 738c-13-1-18-1-19-2-1-1-4-2-6-2-4 0-26-7-33-11-3-1-7-2-8-3-1 0-2-1-2-1 0-1-2-1-4-2-2 0-4-1-5-2 0 0-1-1-2-1 0 0-2-1-4-2-1-2-3-3-4-3 0 0-2-1-4-2-1-2-3-3-3-3-2 0-16-12-16-14 0 0-3-3-6-6-7-7-27-33-32-41-2-4-2-5-5-9-2-4-6-12-7-16-1-2-2-5-2-6-1-2-2-5-2-7-1-2-1-4-2-4 0 0-1-3-2-6 0-4-1-7-1-8-3-6-3-13-4-204 0-188 0-190 2-201 1-6 3-14 3-17 0-3 2-8 2-10 1-3 3-9 4-13 2-6 3-10 7-20 1-1 2-3 3-5 2-3 3-5 4-6 0-2 2-4 3-6 2-2 3-4 3-5 0 0 2-2 3-5 2-2 4-4 4-5 0-1 5-8 9-12 2-2 3-4 3-4 0-2 14-15 22-20 9-7 11-9 12-9 0 0 1-1 2-2 2-2 26-14 28-14 0 0 3-1 5-2 2-1 4-2 5-2 1 0 2 0 3-1 2-2 23-7 34-8 6-1 16-1 22-2 12-1 173-1 194 0 31 2 52 6 66 13 2 1 4 2 5 2 3 0 27 13 32 17 2 2 5 4 6 5 9 5 41 38 41 42 0 1 1 3 3 6 6 8 10 15 10 17 0 1 1 2 1 3 1 1 2 2 2 3 0 1 1 3 2 5 3 6 6 16 7 21 0 2 1 5 1 7 1 1 2 5 3 9 1 3 2 10 3 14 2 12 3 92 3 244-1 139-2 162-4 170-1 2-2 6-2 10-1 4-2 7-2 9-1 1-2 3-3 5 0 4-2 7-9 22-5 9-8 16-10 17-1 1-6 9-6 10 0 1-10 11-19 20-3 3-6 5-6 6-1 1-18 14-19 14 0 0-3 2-5 4-2 1-9 5-14 8-5 2-11 5-13 6-2 1-5 2-6 2-1 0-5 1-9 2-12 4-18 6-23 7-2 0-6 1-8 2-3 1-11 1-23 2-24 1-185 1-208 0zm214-98c4-1 9-2 11-2 1 0 4-1 6-2 2-1 5-2 5-2 3 0 22-11 26-15 1-1 2-2 3-2 1 0 1-1 1-1 0-1 1-2 2-3 4-2 18-19 18-22 0 0 1-2 2-4 2-2 3-5 4-7 0-1 1-3 2-4 1-1 1-4 2-6 0-3 1-6 2-7 2-4 2-375 0-378-1-1-2-3-2-5-1-3-6-13-10-20-1-3-3-6-4-7-1-2-2-3-2-3 0 0-1-1-1-2-2-6-30-28-36-28-1 0-3-1-5-2-2-1-5-2-6-2-1 0-2-1-3-1-1-1-4-2-7-2-3-1-6-2-7-2-2-2-207-3-215-1-9 2-15 3-19 5-1 0-3 1-4 1-1 0-15 7-16 8 0 0-4 3-8 7-9 7-11 10-16 17-4 5-9 14-9 15 0 1-1 2-1 3-4 4-8 18-11 37-1 3-1 75-1 178 0 186 0 173 5 190 9 28 35 56 60 63 2 1 5 2 7 3 1 0 4 1 6 1 1 0 4 1 5 2 4 3 15 3 113 3 94-1 96-1 103-3zM474 620c-9-1-24-1-34-2-15 0-19-1-23-3-3-1-6-2-8-2-5-2-20-10-27-16-4-2-16-18-16-19 0-1-1-2-1-2-1-1-2-2-2-3 0-1-1-3-1-4-2-3-5-13-6-21-2-9-1-337 1-343 0-2 1-7 2-10 0-4 1-8 2-9 0-2 1-4 1-6 1-2 2-4 2-5 1-1 2-2 2-4 1-6 22-25 32-30 18-9 10-8 125-8l101 0 11 2c10 3 15 4 26 10 5 3 21 18 23 22 0 2 1 4 2 4 1 1 5 9 7 17 3 6 3 9 4 28 1 27 1 313 0 329-1 11-2 14-7 27-2 5-16 22-21 26-7 6-20 12-29 15-4 1-8 3-9 3-6 3-123 5-157 4zm116-96c1-1 4-2 6-2 3-1 8-5 8-7 0-1 1-3 2-6 1-3 1-11 2-100 0-53-1-113-1-133-1-43-1-43-10-47-4-2-5-2-69-2-75 0-73 0-79 8l-2 3-1 22c0 12 0 73 0 136-1 125-1 117 5 123 7 6 7 6 74 6 50 0 63 0 65-1zM1835 738c-138 0-254-1-257-2-5 0-6-1-7-2 0-2 0-36 0-78 0-42 1-203 1-359l1-284 42-1c23 0 42 1 43 1 2 1 2 14 2 255 0 219 0 255 1 256 2 1 189 2 191 1 0-1 1-116 1-256 0-175 0-255 1-255 1-2 78-3 83-2l2 1-1 302c0 209-1 303-1 304-1 1-14 1-69 0-38 0-103 0-144 0l-76 0-1 9 0 10 28 0c16 0 55 1 86 1 53 2 149 3 261 5 27 0 61 0 76 1 30 1 180 3 182 2 3-1 7-7 7-10 0-2 1-3 2-4 0-1 1-2 1-3 0 0 1-2 1-4 1-2 4-9 7-16 3-8 6-16 7-18 6-12 11-24 13-29 1-3 3-8 5-11 1-3 3-7 3-8 1-2 3-6 4-9 2-3 3-6 3-7 0-1 1-2 2-3 0-1 1-2 1-3 0-1 8-21 11-26 1-2 2-4 2-5 0 0 2-5 5-10 2-6 4-10 4-11 0-1 1-5 9-20 2-5 5-11 6-12 2-6 3-9 4-10 1-2 6-12 6-15 1-1 2-3 2-4 1 0 2-4 4-9 2-4 4-8 4-8 0-1 1-4 2-6 1-3 4-8 6-12 1-3 3-7 3-7 0-1 1-4 2-6 4-9 7-14 9-20 1-3 3-6 4-7 0-2 1-3 1-5 0-1 1-2 1-3 1-1 2-3 3-4 0-2 2-7 4-11 2-5 5-12 7-15 3-8 4-8 7-2 6 11 7 13 7 15 0 1 1 3 3 6 1 2 2 4 2 5 0 1 2 6 4 11 3 5 6 11 7 15 1 4 3 7 4 8 0 2 1 3 1 4 0 1 1 3 2 4 1 1 2 3 2 4 0 2 1 3 1 5 1 1 3 4 4 8 2 7 8 20 10 22 0 2 1 3 1 4 0 0 1 3 2 6 2 3 3 7 4 8 0 1 2 6 4 10 2 4 4 8 4 9 0 1 1 2 1 4 1 1 3 6 5 11 1 5 4 10 4 12 1 1 2 3 2 4 0 0 1 2 1 4 3 4 8 16 8 17 0 0 2 4 4 9 2 4 4 8 4 9 0 1 1 2 1 4 1 1 2 3 2 4 1 3 3 7 8 18 0 1 1 3 1 4 0 0 2 4 3 7 2 4 5 9 6 12 0 3 2 6 3 8 0 1 1 3 1 4 0 0 1 3 3 7 2 3 4 10 6 15 2 4 4 11 6 13 1 3 2 6 2 6 0 1 1 2 2 3 0 1 1 2 1 3 0 1 1 3 2 6 1 2 2 4 2 5 0 0 1 3 3 7 1 3 2 6 2 7 0 0 2 4 3 8 8 16 10 21 10 22 0 1 2 5 4 10 2 4 4 9 4 9 0 0 1 2 1 4 1 1 3 6 5 11 2 5 4 9 5 10 0 1 1 3 1 4 0 1 1 4 3 7 4 9 8 8-46 8l-47 0-5-10c-3-5-5-10-5-11 0-1-1-3-1-5-2-3-11-25-11-26 0-1-1-3-2-5-1-2-2-5-2-6 0-1-1-2-1-4-1-1-3-3-3-6-5-11-7-17-8-19 0-1-4-10-8-20-4-10-8-20-8-21-1-2-3-7-5-11-2-5-4-10-5-12 0-1-1-3-1-4 0 0-1-2-1-4-1-1-2-3-2-4 0-1-1-2-1-3-1-1-2-3-3-4 0-2-1-5-2-6-1-3-4-11-9-24-1-4-3-9-4-12-1-2-2-4-2-5 0-3-4-4-5-3-1 2-2 8-4 15-1 3-2 5-2 6-1 0-1 1-1 2 0 2-1 4-2 5-2 3-7 13-8 18-1 2-1 4-2 5-1 0-1 1-1 2 0 1-2 4-3 8-2 4-4 10-5 12-1 2-2 5-3 6 0 2-1 3-1 4 0 2-1 4-3 7-1 2-2 5-2 6 0 1-1 3-2 5-1 1-2 4-2 6-1 2-5 12-8 19 0 1-1 3-1 4 0 1-1 2-1 4-1 1-2 2-2 4 0 1-1 2-1 4-1 1-3 6-6 12-4 11-6 16-8 19-1 2-2 4-2 5-2 6-6 17-7 18 0 1-1 3-1 5-1 1-2 3-2 4-1 1-3 4-4 8-4 11-5 13-6 15-2 2-154 2-511 1zM2649 737c-1-1-2-3-2-5-1-5-4-13-5-14-1-1-1-2-1-3 0-2-1-4-2-6-1-2-2-5-2-5 0-1-1-3-2-5-1-2-2-5-2-6 0-1-1-3-1-5-3-5-11-22-11-23 0 0-1-3-2-6-2-3-4-8-5-12-2-4-4-8-5-9 0-2-1-4-1-5 0-1 0-2-1-3 0 0-2-4-4-8-3-8-5-14-9-23-1-3-4-9-6-13-1-5-4-13-6-18-2-4-4-8-4-9 0-1-1-2-1-4-1-1-2-4-3-5 0-1-1-3-2-4 0-1-2-5-4-9-2-4-4-10-6-12-6-14-7-17-8-22-1-2-2-6-3-7-1-2-3-6-8-17-2-4-3-8-3-9 0 0-1-2-1-4-3-4-10-22-10-23 0-1-1-2-1-4-1-1-3-4-3-7-1-3-3-6-4-7 0-1-1-2-1-3 0-1-2-5-9-23-6-14-8-19-11-27-1-3-3-7-4-10-1-2-2-5-2-5 0-1-1-2-1-3-1-1-2-2-2-2 0-1-1-3-2-5-1-3-2-5-2-6 0 0-2-5-4-11-3-5-5-10-5-11 0 0-1-2-2-4-1-2-2-4-2-6 0-1-1-3-2-4 0-1-3-8-6-15-3-7-6-14-6-15-1-2-3-6-4-8-1-3-3-8-5-10l-2-5 0-118c0-66 0-120 1-120 1-3 86-3 89 0 1 1 1 9 1 111 0 114 0 121 4 126 0 2 1 3 1 4 0 1 1 3 1 4 1 1 3 6 5 11 2 4 5 10 5 12 1 1 2 3 2 4 0 1 1 3 2 5 1 2 2 5 3 7 6 13 9 21 11 23 0 1 1 3 1 4 0 1 1 2 1 4 1 1 2 2 2 3 0 1 1 3 2 5 1 3 3 7 4 11 2 4 4 8 5 11 1 2 2 4 2 5 0 1 1 2 2 3 0 1 1 2 1 3 0 1 1 4 3 8 2 3 3 7 3 7 0 1 1 2 1 3 1 1 2 3 3 4 0 3 2 8 6 16 2 5 7 18 7 20 0 0 1 1 2 2 0 0 1 1 1 2 0 1 1 3 2 4 1 2 2 4 2 4 0 2 5 14 8 19 0 2 1 3 1 4 0 1 1 2 2 3 0 1 1 2 1 3 0 1 1 3 6 15 2 3 3 7 4 9 0 1 1 3 2 4 0 1 1 3 2 5 0 1 1 5 3 7 1 3 2 5 2 6 0 1 0 2 1 3 2 4 6 13 6 14 0 0 1 2 2 4 1 2 2 4 2 5 0 0 1 3 2 6 2 3 4 8 5 12 2 4 4 8 5 10 0 1 1 3 1 4 0 1 0 2 1 3 0 0 2 4 4 8 2 4 4 9 5 12 1 2 2 4 2 5 0 1 1 3 2 4 1 2 2 3 2 4 0 1 8 21 11 28 6 14 10 22 10 25 1 1 2 3 3 4 0 1 1 3 2 5 0 2 1 5 2 6 1 1 2 3 2 3 0 2 6 16 7 17 1 1 1 3 1 4 0 2 1 3 2 4 0 0 1 1 1 2 0 1 2 6 5 11 3 6 5 11 5 11 0 1 1 3 2 4 1 3 1 4 0 4-2 2-97 1-99 0zM1350 734l-26 0-1-291 0-290-2-4c-1-2-2-4-2-5 0-2-7-10-12-13-8-5-23-2-31 6-8 9-14 16-16 19 0 2-2 4-3 5-1 2-3 5-5 9-1 1-3 5-5 9-2 3-4 6-4 7 0 0-1 1-2 2 0 1-2 3-3 5-1 1-4 7-7 13-4 6-8 13-10 16-2 4-5 8-6 10-1 1-2 3-2 4 0 1 0 1-1 1 0 0-2 3-4 6-2 3-4 8-6 10-5 8-5 9-14 24-11 18-10 16-15 24-2 4-4 8-5 10-1 1-3 4-4 6-1 2-2 5-4 7-1 1-2 4-4 7-1 2-3 5-5 8-2 2-3 4-3 5 0 0-1 3-3 6-1 2-3 5-3 6-1 1-3 5-6 9-2 3-5 8-6 10-1 2-3 5-4 7-1 1-2 3-3 5-1 1-3 4-4 7-2 3-5 7-5 8-1 1-3 5-5 7-1 2-4 8-7 13-2 5-6 12-9 16-2 3-5 9-7 12-2 3-4 6-5 8-1 1-4 6-6 10-2 3-4 8-5 9-1 1-2 3-2 4 0 0-1 1-1 2-1 1-2 3-3 5-1 2-2 4-2 5-1 0-3 3-4 6-2 4-6 10-14 22-1 2-2 4-2 5 0 0-1 1-1 2-1 1-2 2-2 4-1 1-3 4-5 7-1 3-3 5-3 6 0 0-2 4-5 9-3 4-7 10-8 12-1 3-3 6-5 9-1 2-2 4-3 5-5 12-24 38-27 38 0 0-1 1-2 1 0 2-7 6-9 6-1 0-3-1-5-2-5-2-5-2-6-9-1-3-2-14-2-23-1-26-2-576-1-578 1-1 85-2 88 0 2 1 2 293 0 300-4 12-4 29 0 29 1 0 6-9 6-11 0-1 1-4 2-6 1-2 2-4 2-5 0 0 2-4 4-8 1-4 3-8 3-9 0-1 6-13 10-20 3-6 6-12 10-20 3-7 4-7 6-12 1-1 2-4 3-6 1-1 3-4 4-6 1-1 2-3 2-4 0-1 1-2 2-4 2-3 5-8 11-20 2-4 4-7 4-7 1-1 9-15 11-20 1-1 2-3 3-4 0-1 3-6 6-11 3-6 5-11 6-11 0-1 1-3 2-4 0-2 1-3 2-3 0-1 2-2 2-4 1-2 4-7 6-11 3-5 6-10 6-11 3-6 5-8 7-11 1-1 2-3 2-3 0-1 0-2 1-3 1 0 5-5 8-11 3-5 7-11 9-13 1-1 2-3 3-5 3-5 25-28 27-28 1 0 3-1 4-3 3-2 15-11 17-11 0 0 1-1 2-1 1-1 2-2 4-2 2-1 3-2 4-2 1-1 3-2 4-3 2 0 4-1 5-2 2 0 3-1 5-1 1 0 6-1 12-3l9-3 23 0c23 1 24 1 30 3 4 2 7 3 8 3 1 0 2 1 4 1 1 1 2 2 3 2 6 0 31 21 39 33 8 12 16 31 17 41 1 2 2 5 2 6 2 1 2 10 4 50 2 38 1 572-1 574-1 2-19 2-61 1zM12 732c-2-3-1-718 0-719 1-1 20-1 42-1l41 1 0 360 0 361-42 0c-37 0-41 0-41-2zM114 733c0-1 0-163 0-361l1-359 42 0c38 0 43 0 44 1 2 2 2 717 1 719-1 2-87 2-88 0zM1463 732c0-1 0-163 0-360 0-317 0-358 1-359 2-1 83-1 85 0 3 1 3 719 0 720 0 1-20 1-43 1-39 0-42 0-43-2zM2127 624c-3-1-42-1-87-2-56 0-81-1-82-2-2-2-1-606 1-607 2-1 81-1 86 0l3 0 0 256c0 160 0 257 1 258 1 1 11 2 77 2 41 0 76 0 78 0 1-1 7-8 10-16 1-2 3-7 5-10 2-4 5-11 6-14 3-7 7-15 9-17 0-1 3-6 5-11 4-9 16-34 20-43 6-12 11-23 11-24 0 0 4-9 10-20 5-11 12-25 15-31 6-13 9-20 14-28 1-4 5-11 7-15 2-5 5-10 5-11 1-1 2-3 2-4 1-2 4-7 6-12 4-8 5-12 10-22 1-3 2-6 2-7 1-1 1-54 1-116 1-95 1-114 2-115 1-2 5-2 42-2 22 0 41 1 42 1 2 2 2 244 0 247-2 2-8 16-9 20 0 2-1 3-2 4 0 1-1 2-1 3 0 1-1 2-1 4-3 4-7 14-7 15 0 0-3 8-6 13-1 1-2 3-2 4-3 6-5 12-10 22-2 6-5 13-5 14-1 1-3 5-5 9-1 4-3 9-5 12-1 2-2 5-2 6 0 1 0 2-1 2 0 0-2 3-3 7-2 4-4 10-6 13-4 10-5 11-6 14 0 1-1 3-1 4-2 2-8 18-8 19 0 1-1 2-1 3-1 1-2 3-3 5 0 1-1 3-2 4 0 1-1 2-1 2 0 1-6 16-10 26-5 10-7 14-8 16 0 1-1 3-1 4-1 1-2 3-3 4 0 1-2 6-4 11-6 12-8 17-8 18 0 0-1 3-3 6-6 13-9 21-12 30-1 3-3 6-4 8 0 1-1 3-1 4-1 2-3 8-6 13-2 5-4 10-4 11 0 1-1 2-1 3-1 1-2 2-2 4-1 2-2 4-3 6l-2 3-68 0c-38 0-71-1-74-1z"/></svg>
-    <div><div class="t">IO-COMBAT</div><div class="s">Ionity Grid Tournament</div></div>
-  </div>
-  <div class="btns">
-    <button class="btn" id="hMenu">Menu</button>
-    <button class="btn" id="hMoves">Moves</button>
-    <button class="btn" id="hOptions">Options</button>
-    <button class="btn" id="hSound">SFX ON</button>
-    <button class="btn" id="hFull">[ ] Full</button>
-  </div>
-</header>
-
 <main id="stage">
   <canvas id="cv" width="1280" height="720"></canvas>
+  <div id="brandTag"><svg viewBox="0 0 2759 760" aria-label="IONITY"><path transform="translate(0,760) scale(1,-1)" fill="#00c6ff" d="M953 748c-1 0-5-1-8-1-3 0-7-1-9-1-2-1-4-2-5-2 0 0-3-1-6-2-3-2-7-3-8-3-1-1-4-2-5-3-2-2-7-5-10-8-7-4-18-14-18-16 0 0-2-3-4-5-2-2-4-5-5-6-5-9-11-19-11-20 0-1-1-3-2-4-2-5-5-18-7-30-3-22-5-632-2-634 3-2 84-1 85 0 1 1 1 86 1 304l0 302 2 8c5 16 12 20 28 20 10 0 11 0 15-2 2-2 5-5 7-6 2-1 4-2 5-3 0-1 2-3 4-4 2-2 4-5 5-7 1-2 2-4 3-4 0 0 1-1 1-2 1-1 3-5 6-10 3-4 6-9 8-11 1-2 3-5 4-7 1-2 2-4 3-5 0-1 2-4 4-8 7-10 7-10 8-14 1-1 2-3 3-3 1-1 2-2 2-3 1-2 2-5 4-7 2-2 4-6 5-8 2-5 10-17 11-17 1-1 1-2 1-3 0-1 1-2 2-3 1-1 2-3 3-4 0-2 2-6 4-8 3-5 4-6 9-15 2-4 4-7 5-8 0-1 1-2 1-3 0 0 1-2 3-5 2-2 3-4 3-5 0 0 0-1 1-1 0 0 1-2 2-4 1-2 2-4 3-5 0-1 3-5 5-8 2-4 4-8 5-10 1-1 3-4 4-6 4-7 5-10 8-14 2-2 4-6 6-9 2-4 4-7 4-7 2-2 6-9 6-10 0 0 2-3 4-6 2-3 4-7 5-9 1-2 2-4 3-5 0-1 1-3 2-4 3-7 10-20 12-22 3-4 10-17 13-22 1-2 2-4 2-4 0 0 1-1 2-3 1-3 5-9 6-10 1-1 2-3 3-5 1-2 2-3 2-3 1 0 1-1 2-2 0-2 1-3 1-3 0 0 1-1 2-3 1-2 3-6 5-9 2-3 5-8 6-11 2-3 3-6 4-7 2-2 6-8 7-13 1-1 3-5 5-8 3-4 6-10 8-13 1-3 3-7 5-8 2-3 7-13 11-19 0-2 2-5 4-7 1-3 2-5 3-7 1-3 6-10 8-11 0-1 1-2 1-2 0-1 1-3 3-5 1-1 2-3 2-4 0 0 2-3 4-7 9-13 20-15 25-4 1 3 2 567 0 570 0 2-5 2-40 2-22 0-40 0-41-1-1 0-1-31-1-144 0-110-1-143-2-144-1 0-5 8-5 10 0 1-1 2-1 3-1 1-2 3-3 4 0 2-1 4-1 5-1 1-2 3-2 4-1 3-6 16-7 17 0 1-1 3-1 5-1 1-2 3-2 4-1 1-2 3-3 4 0 2-1 4-1 4-1 1-4 8-4 10 0 1 0 2-1 3-1 1-2 3-11 19-3 7-6 13-7 13-1 1-1 2-1 3 0 1-3 7-6 13-3 6-6 12-7 13 0 2-1 3-1 4-1 0-3 4-5 8-8 16-21 42-23 44-3 6-6 11-10 19-2 4-5 8-5 8-1 0-1 1-1 1 0 1-2 4-4 8-3 3-5 6-5 7 0 1-15 20-20 25-2 3-6 6-8 8-1 2-4 4-5 5-1 1-4 3-6 5-2 2-4 4-5 4 0 0-3 2-5 4-3 2-7 4-8 5-8 4-16 8-20 9-3 1-7 2-8 3-1 0-4 1-6 1-2 0-5 1-6 2-4 2-47 1-51-1zM418 738c-13-1-18-1-19-2-1-1-4-2-6-2-4 0-26-7-33-11-3-1-7-2-8-3-1 0-2-1-2-1 0-1-2-1-4-2-2 0-4-1-5-2 0 0-1-1-2-1 0 0-2-1-4-2-1-2-3-3-4-3 0 0-2-1-4-2-1-2-3-3-3-3-2 0-16-12-16-14 0 0-3-3-6-6-7-7-27-33-32-41-2-4-2-5-5-9-2-4-6-12-7-16-1-2-2-5-2-6-1-2-2-5-2-7-1-2-1-4-2-4 0 0-1-3-2-6 0-4-1-7-1-8-3-6-3-13-4-204 0-188 0-190 2-201 1-6 3-14 3-17 0-3 2-8 2-10 1-3 3-9 4-13 2-6 3-10 7-20 1-1 2-3 3-5 2-3 3-5 4-6 0-2 2-4 3-6 2-2 3-4 3-5 0 0 2-2 3-5 2-2 4-4 4-5 0-1 5-8 9-12 2-2 3-4 3-4 0-2 14-15 22-20 9-7 11-9 12-9 0 0 1-1 2-2 2-2 26-14 28-14 0 0 3-1 5-2 2-1 4-2 5-2 1 0 2 0 3-1 2-2 23-7 34-8 6-1 16-1 22-2 12-1 173-1 194 0 31 2 52 6 66 13 2 1 4 2 5 2 3 0 27 13 32 17 2 2 5 4 6 5 9 5 41 38 41 42 0 1 1 3 3 6 6 8 10 15 10 17 0 1 1 2 1 3 1 1 2 2 2 3 0 1 1 3 2 5 3 6 6 16 7 21 0 2 1 5 1 7 1 1 2 5 3 9 1 3 2 10 3 14 2 12 3 92 3 244-1 139-2 162-4 170-1 2-2 6-2 10-1 4-2 7-2 9-1 1-2 3-3 5 0 4-2 7-9 22-5 9-8 16-10 17-1 1-6 9-6 10 0 1-10 11-19 20-3 3-6 5-6 6-1 1-18 14-19 14 0 0-3 2-5 4-2 1-9 5-14 8-5 2-11 5-13 6-2 1-5 2-6 2-1 0-5 1-9 2-12 4-18 6-23 7-2 0-6 1-8 2-3 1-11 1-23 2-24 1-185 1-208 0zm214-98c4-1 9-2 11-2 1 0 4-1 6-2 2-1 5-2 5-2 3 0 22-11 26-15 1-1 2-2 3-2 1 0 1-1 1-1 0-1 1-2 2-3 4-2 18-19 18-22 0 0 1-2 2-4 2-2 3-5 4-7 0-1 1-3 2-4 1-1 1-4 2-6 0-3 1-6 2-7 2-4 2-375 0-378-1-1-2-3-2-5-1-3-6-13-10-20-1-3-3-6-4-7-1-2-2-3-2-3 0 0-1-1-1-2-2-6-30-28-36-28-1 0-3-1-5-2-2-1-5-2-6-2-1 0-2-1-3-1-1-1-4-2-7-2-3-1-6-2-7-2-2-2-207-3-215-1-9 2-15 3-19 5-1 0-3 1-4 1-1 0-15 7-16 8 0 0-4 3-8 7-9 7-11 10-16 17-4 5-9 14-9 15 0 1-1 2-1 3-4 4-8 18-11 37-1 3-1 75-1 178 0 186 0 173 5 190 9 28 35 56 60 63 2 1 5 2 7 3 1 0 4 1 6 1 1 0 4 1 5 2 4 3 15 3 113 3 94-1 96-1 103-3zM474 620c-9-1-24-1-34-2-15 0-19-1-23-3-3-1-6-2-8-2-5-2-20-10-27-16-4-2-16-18-16-19 0-1-1-2-1-2-1-1-2-2-2-3 0-1-1-3-1-4-2-3-5-13-6-21-2-9-1-337 1-343 0-2 1-7 2-10 0-4 1-8 2-9 0-2 1-4 1-6 1-2 2-4 2-5 1-1 2-2 2-4 1-6 22-25 32-30 18-9 10-8 125-8l101 0 11 2c10 3 15 4 26 10 5 3 21 18 23 22 0 2 1 4 2 4 1 1 5 9 7 17 3 6 3 9 4 28 1 27 1 313 0 329-1 11-2 14-7 27-2 5-16 22-21 26-7 6-20 12-29 15-4 1-8 3-9 3-6 3-123 5-157 4zm116-96c1-1 4-2 6-2 3-1 8-5 8-7 0-1 1-3 2-6 1-3 1-11 2-100 0-53-1-113-1-133-1-43-1-43-10-47-4-2-5-2-69-2-75 0-73 0-79 8l-2 3-1 22c0 12 0 73 0 136-1 125-1 117 5 123 7 6 7 6 74 6 50 0 63 0 65-1zM1835 738c-138 0-254-1-257-2-5 0-6-1-7-2 0-2 0-36 0-78 0-42 1-203 1-359l1-284 42-1c23 0 42 1 43 1 2 1 2 14 2 255 0 219 0 255 1 256 2 1 189 2 191 1 0-1 1-116 1-256 0-175 0-255 1-255 1-2 78-3 83-2l2 1-1 302c0 209-1 303-1 304-1 1-14 1-69 0-38 0-103 0-144 0l-76 0-1 9 0 10 28 0c16 0 55 1 86 1 53 2 149 3 261 5 27 0 61 0 76 1 30 1 180 3 182 2 3-1 7-7 7-10 0-2 1-3 2-4 0-1 1-2 1-3 0 0 1-2 1-4 1-2 4-9 7-16 3-8 6-16 7-18 6-12 11-24 13-29 1-3 3-8 5-11 1-3 3-7 3-8 1-2 3-6 4-9 2-3 3-6 3-7 0-1 1-2 2-3 0-1 1-2 1-3 0-1 8-21 11-26 1-2 2-4 2-5 0 0 2-5 5-10 2-6 4-10 4-11 0-1 1-5 9-20 2-5 5-11 6-12 2-6 3-9 4-10 1-2 6-12 6-15 1-1 2-3 2-4 1 0 2-4 4-9 2-4 4-8 4-8 0-1 1-4 2-6 1-3 4-8 6-12 1-3 3-7 3-7 0-1 1-4 2-6 4-9 7-14 9-20 1-3 3-6 4-7 0-2 1-3 1-5 0-1 1-2 1-3 1-1 2-3 3-4 0-2 2-7 4-11 2-5 5-12 7-15 3-8 4-8 7-2 6 11 7 13 7 15 0 1 1 3 3 6 1 2 2 4 2 5 0 1 2 6 4 11 3 5 6 11 7 15 1 4 3 7 4 8 0 2 1 3 1 4 0 1 1 3 2 4 1 1 2 3 2 4 0 2 1 3 1 5 1 1 3 4 4 8 2 7 8 20 10 22 0 2 1 3 1 4 0 0 1 3 2 6 2 3 3 7 4 8 0 1 2 6 4 10 2 4 4 8 4 9 0 1 1 2 1 4 1 1 3 6 5 11 1 5 4 10 4 12 1 1 2 3 2 4 0 0 1 2 1 4 3 4 8 16 8 17 0 0 2 4 4 9 2 4 4 8 4 9 0 1 1 2 1 4 1 1 2 3 2 4 1 3 3 7 8 18 0 1 1 3 1 4 0 0 2 4 3 7 2 4 5 9 6 12 0 3 2 6 3 8 0 1 1 3 1 4 0 0 1 3 3 7 2 3 4 10 6 15 2 4 4 11 6 13 1 3 2 6 2 6 0 1 1 2 2 3 0 1 1 2 1 3 0 1 1 3 2 6 1 2 2 4 2 5 0 0 1 3 3 7 1 3 2 6 2 7 0 0 2 4 3 8 8 16 10 21 10 22 0 1 2 5 4 10 2 4 4 9 4 9 0 0 1 2 1 4 1 1 3 6 5 11 2 5 4 9 5 10 0 1 1 3 1 4 0 1 1 4 3 7 4 9 8 8-46 8l-47 0-5-10c-3-5-5-10-5-11 0-1-1-3-1-5-2-3-11-25-11-26 0-1-1-3-2-5-1-2-2-5-2-6 0-1-1-2-1-4-1-1-3-3-3-6-5-11-7-17-8-19 0-1-4-10-8-20-4-10-8-20-8-21-1-2-3-7-5-11-2-5-4-10-5-12 0-1-1-3-1-4 0 0-1-2-1-4-1-1-2-3-2-4 0-1-1-2-1-3-1-1-2-3-3-4 0-2-1-5-2-6-1-3-4-11-9-24-1-4-3-9-4-12-1-2-2-4-2-5 0-3-4-4-5-3-1 2-2 8-4 15-1 3-2 5-2 6-1 0-1 1-1 2 0 2-1 4-2 5-2 3-7 13-8 18-1 2-1 4-2 5-1 0-1 1-1 2 0 1-2 4-3 8-2 4-4 10-5 12-1 2-2 5-3 6 0 2-1 3-1 4 0 2-1 4-3 7-1 2-2 5-2 6 0 1-1 3-2 5-1 1-2 4-2 6-1 2-5 12-8 19 0 1-1 3-1 4 0 1-1 2-1 4-1 1-2 2-2 4 0 1-1 2-1 4-1 1-3 6-6 12-4 11-6 16-8 19-1 2-2 4-2 5-2 6-6 17-7 18 0 1-1 3-1 5-1 1-2 3-2 4-1 1-3 4-4 8-4 11-5 13-6 15-2 2-154 2-511 1zM2649 737c-1-1-2-3-2-5-1-5-4-13-5-14-1-1-1-2-1-3 0-2-1-4-2-6-1-2-2-5-2-5 0-1-1-3-2-5-1-2-2-5-2-6 0-1-1-3-1-5-3-5-11-22-11-23 0 0-1-3-2-6-2-3-4-8-5-12-2-4-4-8-5-9 0-2-1-4-1-5 0-1 0-2-1-3 0 0-2-4-4-8-3-8-5-14-9-23-1-3-4-9-6-13-1-5-4-13-6-18-2-4-4-8-4-9 0-1-1-2-1-4-1-1-2-4-3-5 0-1-1-3-2-4 0-1-2-5-4-9-2-4-4-10-6-12-6-14-7-17-8-22-1-2-2-6-3-7-1-2-3-6-8-17-2-4-3-8-3-9 0 0-1-2-1-4-3-4-10-22-10-23 0-1-1-2-1-4-1-1-3-4-3-7-1-3-3-6-4-7 0-1-1-2-1-3 0-1-2-5-9-23-6-14-8-19-11-27-1-3-3-7-4-10-1-2-2-5-2-5 0-1-1-2-1-3-1-1-2-2-2-2 0-1-1-3-2-5-1-3-2-5-2-6 0 0-2-5-4-11-3-5-5-10-5-11 0 0-1-2-2-4-1-2-2-4-2-6 0-1-1-3-2-4 0-1-3-8-6-15-3-7-6-14-6-15-1-2-3-6-4-8-1-3-3-8-5-10l-2-5 0-118c0-66 0-120 1-120 1-3 86-3 89 0 1 1 1 9 1 111 0 114 0 121 4 126 0 2 1 3 1 4 0 1 1 3 1 4 1 1 3 6 5 11 2 4 5 10 5 12 1 1 2 3 2 4 0 1 1 3 2 5 1 2 2 5 3 7 6 13 9 21 11 23 0 1 1 3 1 4 0 1 1 2 1 4 1 1 2 2 2 3 0 1 1 3 2 5 1 3 3 7 4 11 2 4 4 8 5 11 1 2 2 4 2 5 0 1 1 2 2 3 0 1 1 2 1 3 0 1 1 4 3 8 2 3 3 7 3 7 0 1 1 2 1 3 1 1 2 3 3 4 0 3 2 8 6 16 2 5 7 18 7 20 0 0 1 1 2 2 0 0 1 1 1 2 0 1 1 3 2 4 1 2 2 4 2 4 0 2 5 14 8 19 0 2 1 3 1 4 0 1 1 2 2 3 0 1 1 2 1 3 0 1 1 3 6 15 2 3 3 7 4 9 0 1 1 3 2 4 0 1 1 3 2 5 0 1 1 5 3 7 1 3 2 5 2 6 0 1 0 2 1 3 2 4 6 13 6 14 0 0 1 2 2 4 1 2 2 4 2 5 0 0 1 3 2 6 2 3 4 8 5 12 2 4 4 8 5 10 0 1 1 3 1 4 0 1 0 2 1 3 0 0 2 4 4 8 2 4 4 9 5 12 1 2 2 4 2 5 0 1 1 3 2 4 1 2 2 3 2 4 0 1 8 21 11 28 6 14 10 22 10 25 1 1 2 3 3 4 0 1 1 3 2 5 0 2 1 5 2 6 1 1 2 3 2 3 0 2 6 16 7 17 1 1 1 3 1 4 0 2 1 3 2 4 0 0 1 1 1 2 0 1 2 6 5 11 3 6 5 11 5 11 0 1 1 3 2 4 1 3 1 4 0 4-2 2-97 1-99 0zM1350 734l-26 0-1-291 0-290-2-4c-1-2-2-4-2-5 0-2-7-10-12-13-8-5-23-2-31 6-8 9-14 16-16 19 0 2-2 4-3 5-1 2-3 5-5 9-1 1-3 5-5 9-2 3-4 6-4 7 0 0-1 1-2 2 0 1-2 3-3 5-1 1-4 7-7 13-4 6-8 13-10 16-2 4-5 8-6 10-1 1-2 3-2 4 0 1 0 1-1 1 0 0-2 3-4 6-2 3-4 8-6 10-5 8-5 9-14 24-11 18-10 16-15 24-2 4-4 8-5 10-1 1-3 4-4 6-1 2-2 5-4 7-1 1-2 4-4 7-1 2-3 5-5 8-2 2-3 4-3 5 0 0-1 3-3 6-1 2-3 5-3 6-1 1-3 5-6 9-2 3-5 8-6 10-1 2-3 5-4 7-1 1-2 3-3 5-1 1-3 4-4 7-2 3-5 7-5 8-1 1-3 5-5 7-1 2-4 8-7 13-2 5-6 12-9 16-2 3-5 9-7 12-2 3-4 6-5 8-1 1-4 6-6 10-2 3-4 8-5 9-1 1-2 3-2 4 0 0-1 1-1 2-1 1-2 3-3 5-1 2-2 4-2 5-1 0-3 3-4 6-2 4-6 10-14 22-1 2-2 4-2 5 0 0-1 1-1 2-1 1-2 2-2 4-1 1-3 4-5 7-1 3-3 5-3 6 0 0-2 4-5 9-3 4-7 10-8 12-1 3-3 6-5 9-1 2-2 4-3 5-5 12-24 38-27 38 0 0-1 1-2 1 0 2-7 6-9 6-1 0-3-1-5-2-5-2-5-2-6-9-1-3-2-14-2-23-1-26-2-576-1-578 1-1 85-2 88 0 2 1 2 293 0 300-4 12-4 29 0 29 1 0 6-9 6-11 0-1 1-4 2-6 1-2 2-4 2-5 0 0 2-4 4-8 1-4 3-8 3-9 0-1 6-13 10-20 3-6 6-12 10-20 3-7 4-7 6-12 1-1 2-4 3-6 1-1 3-4 4-6 1-1 2-3 2-4 0-1 1-2 2-4 2-3 5-8 11-20 2-4 4-7 4-7 1-1 9-15 11-20 1-1 2-3 3-4 0-1 3-6 6-11 3-6 5-11 6-11 0-1 1-3 2-4 0-2 1-3 2-3 0-1 2-2 2-4 1-2 4-7 6-11 3-5 6-10 6-11 3-6 5-8 7-11 1-1 2-3 2-3 0-1 0-2 1-3 1 0 5-5 8-11 3-5 7-11 9-13 1-1 2-3 3-5 3-5 25-28 27-28 1 0 3-1 4-3 3-2 15-11 17-11 0 0 1-1 2-1 1-1 2-2 4-2 2-1 3-2 4-2 1-1 3-2 4-3 2 0 4-1 5-2 2 0 3-1 5-1 1 0 6-1 12-3l9-3 23 0c23 1 24 1 30 3 4 2 7 3 8 3 1 0 2 1 4 1 1 1 2 2 3 2 6 0 31 21 39 33 8 12 16 31 17 41 1 2 2 5 2 6 2 1 2 10 4 50 2 38 1 572-1 574-1 2-19 2-61 1zM12 732c-2-3-1-718 0-719 1-1 20-1 42-1l41 1 0 360 0 361-42 0c-37 0-41 0-41-2zM114 733c0-1 0-163 0-361l1-359 42 0c38 0 43 0 44 1 2 2 2 717 1 719-1 2-87 2-88 0zM1463 732c0-1 0-163 0-360 0-317 0-358 1-359 2-1 83-1 85 0 3 1 3 719 0 720 0 1-20 1-43 1-39 0-42 0-43-2zM2127 624c-3-1-42-1-87-2-56 0-81-1-82-2-2-2-1-606 1-607 2-1 81-1 86 0l3 0 0 256c0 160 0 257 1 258 1 1 11 2 77 2 41 0 76 0 78 0 1-1 7-8 10-16 1-2 3-7 5-10 2-4 5-11 6-14 3-7 7-15 9-17 0-1 3-6 5-11 4-9 16-34 20-43 6-12 11-23 11-24 0 0 4-9 10-20 5-11 12-25 15-31 6-13 9-20 14-28 1-4 5-11 7-15 2-5 5-10 5-11 1-1 2-3 2-4 1-2 4-7 6-12 4-8 5-12 10-22 1-3 2-6 2-7 1-1 1-54 1-116 1-95 1-114 2-115 1-2 5-2 42-2 22 0 41 1 42 1 2 2 2 244 0 247-2 2-8 16-9 20 0 2-1 3-2 4 0 1-1 2-1 3 0 1-1 2-1 4-3 4-7 14-7 15 0 0-3 8-6 13-1 1-2 3-2 4-3 6-5 12-10 22-2 6-5 13-5 14-1 1-3 5-5 9-1 4-3 9-5 12-1 2-2 5-2 6 0 1 0 2-1 2 0 0-2 3-3 7-2 4-4 10-6 13-4 10-5 11-6 14 0 1-1 3-1 4-2 2-8 18-8 19 0 1-1 2-1 3-1 1-2 3-3 5 0 1-1 3-2 4 0 1-1 2-1 2 0 1-6 16-10 26-5 10-7 14-8 16 0 1-1 3-1 4-1 1-2 3-3 4 0 1-2 6-4 11-6 12-8 17-8 18 0 0-1 3-3 6-6 13-9 21-12 30-1 3-3 6-4 8 0 1-1 3-1 4-1 2-3 8-6 13-2 5-4 10-4 11 0 1-1 2-1 3-1 1-2 2-2 4-1 2-2 4-3 6l-2 3-68 0c-38 0-71-1-74-1z"/></svg><b>IO-COMBAT</b></div>
+  <div id="tools">
+    <button class="btn" id="hMenu" title="Menu">☰ Menu</button>
+    <button class="btn" id="hMoves" title="Move list">? Moves</button>
+    <button class="btn" id="hOptions" title="Options">⚙</button>
+    <button class="btn" id="hSound" title="Sound">SFX ON</button>
+    <button class="btn gold" id="hFull" title="Fullscreen">⛶ Full</button>
+  </div>
 
   <!-- SPLASH -->
   <div id="splash" class="ov">
@@ -200,15 +205,27 @@ footer .legal{font-size:11px;color:#5d7894}
     <div class="sub">Grid Tournament · Original Arcade Fighter</div>
     <div class="menu" id="menu">
       <button class="btn big gold" data-mode="arcade">Arcade Ladder</button>
+      <button class="btn big red" data-mode="survival">Survival</button>
       <button class="btn big" data-mode="ai">Versus AI</button>
       <button class="btn big" data-mode="2p">2P Local</button>
       <button class="btn big" data-mode="training">Training</button>
       <button class="btn" data-act="moves">Move List</button>
       <button class="btn" data-act="options">Options</button>
-      <a class="btn wide" style="text-align:center" href="../" id="moreGames">◀ Play IO-MAN · Get Over It Door</a>
+      <a class="btn" style="text-align:center;display:flex;align-items:center;justify-content:center" href="../" id="moreGames">◀ Play IO-MAN</a>
     </div>
     <div class="stats" id="titleStats"></div>
-    <div class="hint">Keyboard: W/S + F to pick · Enter to start · Gamepad and touch supported</div>
+    <div class="hint">Keyboard: W/S + F to pick · Enter to start · Gamepad and touch supported · ⛶ fullscreen top-right</div>
+    <div class="foot">
+  <div class="links">
+    <a href="https://www.ionity.fun" target="_blank" rel="noopener">ionity.fun</a>
+    <a href="https://www.ionity.today" target="_blank" rel="noopener">ionity.today</a>
+    <a href="https://www.ionity.world" target="_blank" rel="noopener">ionity.world</a>
+    <a href="https://www.ionity.co.za" target="_blank" rel="noopener">ionity.co.za</a>
+    <a href="https://github.com/Ionity-Global-Pty-Ltd/IO-Combat" target="_blank" rel="noopener">GitHub · IO-Combat</a>
+    <a href="mailto:ai@ionity.today">ai@ionity.today</a>
+  </div>
+  <div class="legal">© 2018–2026 Antwerp Designs | Ionity (Pty) Ltd · AEDI · Policy 986 AED · AED 900 · All characters, arenas, music and sounds are original. · <b>BUILDING TOMORROW, TODAY.</b></div>
+</div>
   </div>
 
   <!-- SELECT -->
@@ -224,6 +241,7 @@ footer .legal{font-size:11px;color:#5d7894}
     <div class="row">
       <div class="pick" id="arenaPick"><button data-d="-1">◀</button><span>ARENA</span><b id="arenaName">SERVER CORE</b><button data-d="1">▶</button></div>
       <div class="pick" id="diffPick"><button data-d="-1">◀</button><span>CPU</span><b id="diffName">NORMAL</b><button data-d="1">▶</button></div>
+      <button class="btn" id="selAlt" title="P1 colour (G) · P2 colour (K)">🎨 Colours</button>
       <button class="btn" id="selBack">Back</button>
       <button class="btn big gold" id="selGo">ENGAGE ▶</button>
     </div>
@@ -263,13 +281,17 @@ footer .legal{font-size:11px;color:#5d7894}
           <li><kbd>H</kbd> hold block · <kbd>S</kbd>+<kbd>H</kbd> low block</li>
           <li><kbd>H</kbd>+<kbd>F</kbd> up close: <b>DATA GRAB</b> (unblockable)</li>
           <li><kbd>R</kbd> projectile (30 ION) · <kbd>T</kbd> blink strike (40)</li>
+          <li><kbd>S</kbd>+<kbd>R</kbd> <b>SIGNATURE</b> move (25 ION, unique per fighter)</li>
           <li><kbd>Y</kbd> <b>ION SURGE</b> super (100 ION)</li>
+          <li>Tap <kbd>H</kbd> just before a hit = <b>PERFECT GUARD</b></li>
+          <li><kbd>H</kbd>+<kbd>G</kbd> while being hit = <b>ION BREAKER</b> (50 ION)</li>
         </ul></div>
         <div class="box"><h4>Player 2 · Keyboard (2P)</h4><ul>
           <li><kbd>◀</kbd>/<kbd>▶</kbd> move · double-tap to dash</li>
           <li><kbd>▲</kbd> jump · <kbd>▼</kbd> crouch</li>
           <li><kbd>J</kbd> punch · <kbd>K</kbd> kick · <kbd>L</kbd> block</li>
-          <li><kbd>U</kbd> projectile · <kbd>I</kbd> blink · <kbd>O</kbd> surge</li>
+          <li><kbd>U</kbd> projectile · <kbd>▼</kbd>+<kbd>U</kbd> signature · <kbd>I</kbd> blink · <kbd>O</kbd> surge</li>
+          <li><kbd>L</kbd>+<kbd>K</kbd> while being hit = ION BREAKER</li>
           <li>Numpad works too: <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd></li>
           <li><b>Gamepad:</b> X punch · Y kick · RB/RT block · B projectile · LB blink · LT surge · A jump · Start pause</li>
           <li><kbd>P</kbd>/<kbd>Esc</kbd> pause · <kbd>M</kbd> mute · <kbd>N</kbd> music</li>
@@ -282,6 +304,13 @@ footer .legal{font-size:11px;color:#5d7894}
         Elements: <span style="color:#00c6ff">ION</span> knockback · <span style="color:#facc15">VOLT</span> stun ·
         <span style="color:#7dd3fc">CRYO</span> freeze · <span style="color:#a855f7">VOID</span> drains ION ·
         <span style="color:#4ade80">SPORE</span> poison · <span style="color:#f97316">FIRE</span> burn.
+        Below 25% health you <b style="color:#ff3b5c">OVERCLOCK</b> (+12% damage).
+      </div>
+      <div class="box" style="margin-top:12px"><h4>Signature moves (▼ + BLAST)</h4>
+        <b style="color:#00c6ff">IO-MAN</b> Axe Cyclone (rising anti-air) · <b style="color:#facc15">VOLTA</b> Thunder Drop (dive + shockwave) ·
+        <b style="color:#7dd3fc">CRYO-CORE</b> Glacier Wall (stops projectiles) · <b style="color:#a855f7">NULL</b> Void Swap (switch sides) ·
+        <b style="color:#4ade80">MYCELIA</b> Spore Trap (hidden mine) · <b style="color:#f97316">BLAZE-443</b> Flame Pillar (erupts under rival) ·
+        <b style="color:#ffd166">THE AUDITOR</b> Asset Seizure (command grab, steals ION)
       </div>
     </div>
   </div>
@@ -297,6 +326,9 @@ footer .legal{font-size:11px;color:#5d7894}
       <div class="opt"><span>Music volume</span><input type="range" id="oMus" min="0" max="100"></div>
       <div class="opt"><span>Screen shake</span><button class="btn" id="oShake">ON</button></div>
       <div class="opt"><span>Reduced flashing</span><button class="btn" id="oFlash">OFF</button></div>
+      <div class="opt"><span>Auto fullscreen</span><button class="btn" id="oFull">ON</button></div>
+      <div class="opt"><span>Announcer voice</span><button class="btn" id="oVoice">ON</button></div>
+      <div class="opt"><span>Dynamic camera</span><button class="btn" id="oCam">ON</button></div>
       <div class="opt"><span>Touch controls</span><button class="btn" id="oTouch">AUTO</button></div>
       <div class="opt" style="border:0"><span>Reset stats &amp; unlocks</span><button class="btn red" id="oReset">RESET</button></div>
     </div>
@@ -319,24 +351,13 @@ footer .legal{font-size:11px;color:#5d7894}
     <div class="sub">IO-COMBAT plays sideways</div><button class="btn" id="rotFull" style="margin-top:14px">⟳ Fullscreen + Landscape</button></div>
 </main>
 
-<footer class="bar">
-  <div class="links">
-    <a href="https://www.ionity.fun" target="_blank" rel="noopener">ionity.fun</a>
-    <a href="https://www.ionity.today" target="_blank" rel="noopener">ionity.today</a>
-    <a href="https://www.ionity.world" target="_blank" rel="noopener">ionity.world</a>
-    <a href="https://www.ionity.co.za" target="_blank" rel="noopener">ionity.co.za</a>
-    <a href="https://github.com/Ionity-Global-Pty-Ltd/IO-Combat" target="_blank" rel="noopener">GitHub · IO-Combat</a>
-    <a href="mailto:ai@ionity.today">ai@ionity.today</a>
-  </div>
-  <div class="legal">© 2018–2026 Antwerp Designs | Ionity (Pty) Ltd · AEDI · Policy 986 AED · AED 900 · All characters, arenas, music and sounds are original. · <b>BUILDING TOMORROW, TODAY.</b></div>
-</footer>
 <script>
 'use strict';
 /* =========================================================================
- * IO-COMBAT v1.0.0 · GME-2026-10-011 · Ionity (Pty) Ltd · AEDI · Policy 986 AED
+ * IO-COMBAT v1.1.0 · GME-2026-10-011 · Ionity (Pty) Ltd · AEDI · Policy 986 AED
  * Original 2D arcade fighter. Vanilla JS, one file, no build step.
  * ========================================================================= */
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const W = 1280, H = 720, GROUND = 604, WALL_L = 60, WALL_R = 1220;
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -348,8 +369,8 @@ const QS = new URLSearchParams(location.search);
 /* ---------------------------------------------------------------- STORAGE */
 const STORE_KEY = 'iocombat.v1';
 const DEFAULT_SAVE = {
-  settings: { diff: 1, rounds: 2, timer: 99, sfx: 70, music: 45, shake: true, reduceFlash: false, touch: 'auto', muted: false, musicOn: true },
-  stats: { wins: 0, losses: 0, perfects: 0, deletes: 0, arcadeClears: 0, bestStreak: 0, streak: 0, played: 0 },
+  settings: { diff: 1, rounds: 2, timer: 99, sfx: 70, music: 45, shake: true, reduceFlash: false, touch: 'auto', muted: false, musicOn: true, autoFull: true, voice: true, cam: true },
+  stats: { wins: 0, losses: 0, perfects: 0, deletes: 0, arcadeClears: 0, bestStreak: 0, streak: 0, played: 0, survivalBest: 0, parries: 0 },
   unlocked: { auditor: false }
 };
 function loadSave() {
@@ -438,6 +459,10 @@ class Audio {
       case 'gong': [98, 147, 196, 294].forEach((f, i) => this.tone(t, i % 2 ? 'triangle' : 'sine', f, f * 0.97, 1.4, 0.22 / (i + 1))); break;
       case 'ko': this.tone(t, 'sawtooth', 300, 40, 0.9, 0.4); this.noise(t, 0.8, 0.4, 'lowpass', 2000, 80); break;
       case 'delete': for (let i = 0; i < 10; i++) this.tone(t + i * 0.045, 'square', 1600 - i * 140, 0, 0.05, 0.16); this.tone(t + 0.45, 'sine', 80, 30, 0.8, 0.6); break;
+      case 'parry': this.tone(t, 'square', 1320, 0, 0.05, 0.2); this.tone(t + 0.05, 'square', 1980, 0, 0.12, 0.2); this.noise(t, 0.1, 0.2, 'highpass', 6000); break;
+      case 'breaker': this.tone(t, 'sine', 200, 1200, 0.25, 0.4); this.noise(t, 0.4, 0.4, 'bandpass', 3000, 300); break;
+      case 'overclock': this.tone(t, 'sawtooth', 110, 880, 0.35, 0.25); break;
+      case 'sig': this.tone(t, 'square', 440, 880, 0.08, 0.18); this.tone(t + 0.08, 'triangle', 880, 220, 0.25, 0.2); break;
       case 'tick': this.tone(t, 'square', 1200, 0, 0.03, 0.08); break;
     }
   }
@@ -479,37 +504,62 @@ const TRACKS = {
     bass: 'xx.xx.xox.xx.xo.', arp: '0..1..2..3..2.1.', kick: 'x..x..x.x..x..x.', snare: '....x.......x..x', hat: 'xxxxxxxxxxxxxxxx' }
 };
 const audio = new Audio();
+/* announcer voice (Web Speech API, robotic low pitch) */
+function announce(text) {
+  if (!SAVE.settings.voice || SAVE.settings.muted || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.toLowerCase().replace('io-', 'eye oh ').replace('-443', ' four four three'));
+    u.pitch = 0.35; u.rate = 0.92; u.volume = Math.min(1, SAVE.settings.sfx / 70);
+    const v = speechSynthesis.getVoices().find(v => /en(-|_)(GB|US|ZA)/i.test(v.lang)); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) { /* speech unavailable */ }
+}
 
 /* ---------------------------------------------------------------- ROSTER */
 const FIGHTERS = [
   { id: 'ioman', name: 'IO-MAN', title: 'Axe of Ions · Hero of the Grid', element: 'ion',
     c1: '#00c6ff', c2: '#1658A4', c3: '#0b1a2b', skin: '#d9b99b', glow: '#00c6ff', emblem: 'IO',
     proj: 'ION AXE', tele: 'PACKET DASH', surge: 'GET OVER IT', stats: { power: 90, speed: 90, defense: 88 },
-    quote: 'Chop first. Ask questions in the logs.' },
+    quote: 'Chop first. Ask questions in the logs.',
+    sig: { name: 'AXE CYCLONE', type: 'cyclone' }, alt: { c1: '#e2e8f0', c2: '#0f766e', c3: '#0b1a2b', glow: '#5eead4' },
+    taunt: "Let's get over it. Together, or one of us at a time.", win: "Door's open. Walk through it next time." },
   { id: 'volta', name: 'VOLTA', title: 'Edge Node Sentinel', element: 'volt',
     c1: '#facc15', c2: '#6d28d9', c3: '#1c1033', skin: '#c99a7a', glow: '#fde047', emblem: 'V',
     proj: 'EDGE ARC', tele: 'SPARK HOP', surge: 'GRID OVERLOAD', stats: { power: 84, speed: 98, defense: 80 },
-    quote: 'Latency is a choice. I chose zero.' },
+    quote: 'Latency is a choice. I chose zero.',
+    sig: { name: 'THUNDER DROP', type: 'drop' }, alt: { c1: '#38bdf8', c2: '#be123c', c3: '#1a0a14', glow: '#7dd3fc' },
+    taunt: "I route around obstacles. You are an obstacle.", win: "Packet delivered. Zero loss on my side." },
   { id: 'cryo', name: 'CRYO-CORE', title: 'Coolant Daemon of the Server Hall', element: 'cryo',
     c1: '#7dd3fc', c2: '#0e7490', c3: '#0b2530', skin: '#e3cfc2', glow: '#bae6fd', emblem: '*',
     proj: 'COOLANT LANCE', tele: 'FROST BLINK', surge: 'ABSOLUTE IDLE', stats: { power: 86, speed: 84, defense: 96 },
-    quote: 'Every system runs better at minus forty.' },
+    quote: 'Every system runs better at minus forty.',
+    sig: { name: 'GLACIER WALL', type: 'wall' }, alt: { c1: '#f0abfc', c2: '#6b21a8', c3: '#1d0b2b', glow: '#f5d0fe' },
+    taunt: "Your fans are spinning. Let me cool you down.", win: "Thermal event resolved. You may reboot." },
   { id: 'null', name: 'NULL', title: 'Void Pointer Assassin', element: 'void',
     c1: '#a855f7', c2: '#2e1065', c3: '#0f0a1a', skin: '#2a2238', glow: '#c084fc', emblem: '0',
     proj: 'SEGFAULT ORB', tele: 'NULL BLINK', surge: 'UNDEFINED', stats: { power: 88, speed: 94, defense: 82 },
-    quote: 'You were never referenced.' },
+    quote: 'You were never referenced.',
+    sig: { name: 'VOID SWAP', type: 'swap' }, alt: { c1: '#ef4444', c2: '#18181b', c3: '#09090b', glow: '#fca5a5' },
+    taunt: "Your position is just a pointer. I can change it.", win: "Dereferenced." },
   { id: 'mycelia', name: 'MYCELIA', title: 'Spore Witch of the Root', element: 'spore',
     c1: '#4ade80', c2: '#7c2d12', c3: '#14281a', skin: '#b9d8b0', glow: '#86efac', emblem: '§',
     proj: 'SPORE CLOUD', tele: 'ROOT WALK', surge: 'GREAT BLOOM', stats: { power: 85, speed: 88, defense: 90 },
-    quote: 'The network was ours before you wired it.' },
+    quote: 'The network was ours before you wired it.',
+    sig: { name: 'SPORE TRAP', type: 'trap' }, alt: { c1: '#fbbf24', c2: '#3f6212', c3: '#1a1f0a', glow: '#fde68a' },
+    taunt: "Watch where you step. The root remembers.", win: "You were compost all along." },
   { id: 'blaze', name: 'BLAZE-443', title: 'Firewall Gate Guardian', element: 'fire',
     c1: '#f97316', c2: '#7f1d1d', c3: '#2a0d07', skin: '#c58d6a', glow: '#fdba74', emblem: '443',
     proj: 'PORT BLAST', tele: 'FLARE STEP', surge: 'DENY ALL', stats: { power: 97, speed: 80, defense: 90 },
-    quote: 'Request denied. Permanently.' },
+    quote: 'Request denied. Permanently.',
+    sig: { name: 'FLAME PILLAR', type: 'pillar' }, alt: { c1: '#e5e7eb', c2: '#1d4ed8', c3: '#0b1222', glow: '#93c5fd' },
+    taunt: "No ticket, no entry. And you have no ticket.", win: "Connection refused. Have a nice day." },
   { id: 'auditor', name: 'THE AUDITOR', title: 'Governance Overlord · Final Boss', element: 'audit', boss: true,
     c1: '#ffd166', c2: '#1f2937', c3: '#0b0f17', skin: '#9ca3af', glow: '#ffe08a', emblem: '986',
     proj: 'COMPLIANCE BEAM', tele: 'SUBPOENA', surge: 'FULL AUDIT', stats: { power: 100, speed: 86, defense: 100 },
-    quote: 'Policy 986 applies to you too.' }
+    quote: 'Policy 986 applies to you too.',
+    sig: { name: 'ASSET SEIZURE', type: 'seize' }, alt: { c1: '#e5e7eb', c2: '#7f1d1d', c3: '#140808', glow: '#fecaca' },
+    taunt: "Every frame you waste is logged.", win: "Audit complete. You failed every control." }
 ];
 const ELEMENT_INFO = {
   ion: { label: 'ION', col: '#00c6ff' }, volt: { label: 'VOLT', col: '#facc15' }, cryo: { label: 'CRYO', col: '#7dd3fc' },
@@ -537,6 +587,7 @@ const MOVES = {
   grab:     { total: 24, a0: 3, a1: 5,  dmg: 12, kind: 'throw', x0: 0, x1: 86, y0: -150, y1: 0, hs: 0, push: 0, stop: 8, gain: 10, heavy: true },
   special:  { total: 30, spawn: 10, cost: 30 },
   tele:     { total: 30, a0: 15, a1: 21, dmg: 11, kind: 'mid', x0: 0, x1: 104, y0: -150, y1: -60, hs: 18, push: 9, stop: 7, gain: 6, heavy: true, cost: 40 },
+  sig:      { total: 28, cost: 25 },
   surge:    { total: 78, freeze: 44, a0: 46, a1: 62, dmg: 30, kind: 'mid', cost: 100 }
 };
 
@@ -545,23 +596,23 @@ const MOVES = {
  * Presses are buffered for 6 frames so quick taps never get lost. */
 const PAD_KEYS = ['left', 'right', 'up', 'down', 'punch', 'kick', 'block', 'special', 'tele', 'surge'];
 class Pad {
-  constructor() { this.held = {}; this.buf = {}; this.src = {}; this.dn = {}; this.bl = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; }); }
+  constructor() { this.held = {}; this.buf = {}; this.src = {}; this.dn = {}; this.bl = {}; this.age = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; this.age[k] = 99; }); }
   set(k, v, src = 'k') {
     // several sources (keyboard / touch / gamepad / ai) may hold the same key
     const key = k + ':' + src;
-    if (v) { if (!this.src[key]) { this.src[key] = 1; if (!this.held[k]) { this.buf[k] = 6; this.dn[k] = this.held.down; this.bl[k] = this.held.block; } } }
+    if (v) { if (!this.src[key]) { this.src[key] = 1; if (!this.held[k]) { this.buf[k] = 6; this.age[k] = 0; this.dn[k] = this.held.down; this.bl[k] = this.held.block; } } }
     else delete this.src[key];
     this.held[k] = Object.keys(this.src).some(s => s.startsWith(k + ':'));
   }
   press(k) { return this.buf[k] > 0; }
   use(k) { this.buf[k] = 0; }
-  tick() { PAD_KEYS.forEach(k => { if (this.buf[k] > 0) this.buf[k]--; }); }
+  tick() { PAD_KEYS.forEach(k => { if (this.buf[k] > 0) this.buf[k]--; if (this.age[k] < 99) this.age[k]++; }); }
   clear() { this.src = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; }); }
   clearSrc(src) { Object.keys(this.src).forEach(s => { if (s.endsWith(':' + src)) delete this.src[s]; }); PAD_KEYS.forEach(k => { this.held[k] = Object.keys(this.src).some(s => s.startsWith(k + ':')); }); }
 }
 
 /* -------------------------------------------------------------- PARTICLES */
-let particles = [], projectiles = [], floorPix = [], popups = [];
+let particles = [], projectiles = [], floorPix = [], popups = [], hazards = [], rings = [];
 class Particle {
   constructor(o) { Object.assign(this, { g: 0.4, size: 4, life: 30, rot: 0, vr: 0, shape: 'sq', floor: false, drag: 1 }, o); this.max = this.life; }
   update() {
@@ -588,6 +639,7 @@ function burst(x, y, n, colors, o = {}) {
   }
 }
 function popup(x, y, text, color, size = 24) { popups.push({ x, y, text, color, size, life: 50 }); }
+function ring(x, y, color, max = 90, w = 6) { rings.push({ x, y, r: 6, max, color, w, life: 18 }); }
 
 /* ------------------------------------------------------------- PROJECTILE */
 const PROJ = {
@@ -637,24 +689,73 @@ class Projectile {
   }
 }
 
+/* ---------------------------------------------------------------- HAZARDS
+ * Placed by signature moves: CRYO wall, MYCELIA trap, BLAZE pillar. */
+class Hazard {
+  constructor(type, owner, x) { Object.assign(this, { type, owner, x, y: GROUND, t: 0, alive: true, hp: 3, hit: false });
+    this.life = type === 'wall' ? 170 : type === 'trap' ? 420 : 52; this.col = owner.d.glow; }
+  update(G, opp) {
+    this.t++; if (this.t > this.life) { this.alive = false; return; }
+    const hittable = !opp.isInvuln() || (G.state === 'terminate' && opp.state === 'dizzy');
+    if (this.type === 'wall') {
+      for (const p of projectiles) if (p.alive && p.owner !== this.owner && Math.abs(p.x - this.x) < 30 + p.r) {
+        p.alive = false; this.hp--; burst(this.x, p.y, 18, ['#e0f7ff', this.col, '#fff'], { g: 0.2 }); audio.sfx('block'); popup(this.x, p.y - 30, 'BLOCKED', '#bae6fd', 18);
+      }
+      if (this.hp <= 0) { this.alive = false; burst(this.x, GROUND - 80, 30, ['#e0f7ff', this.col], { g: 0.4, floor: true }); }
+      if (!this.hit && hittable && Math.abs(opp.x - this.x) < 42 && opp.y > GROUND - 170) {
+        this.hit = true; G.resolveHit(this.owner, opp, { dmg: 5, kind: 'mid', heavy: true, hs: 16, push: 9, stop: 5, gain: 4, src: 'proj', dir: Math.sign(opp.x - this.x) || 1, el: 'cryo', move: 'sig' });
+      }
+    } else if (this.type === 'trap') {
+      if (this.t > 30 && hittable && opp.grounded && Math.abs(opp.x - this.x) < 52) {
+        this.alive = false; burst(this.x, GROUND - 20, 40, ['#4ade80', '#86efac', '#166534'], { g: 0.1, up: 4, shape: 'c' }); ring(this.x, GROUND - 20, '#4ade80', 120);
+        G.resolveHit(this.owner, opp, { dmg: 9, kind: 'throw', heavy: true, launch: true, hs: 0, push: 3, stop: 8, gain: 6, src: 'proj', dir: Math.sign(opp.x - this.x) || 1, el: 'spore', move: 'sig' });
+      }
+    } else if (this.type === 'pillar') {
+      if (this.t === 26) { audio.sfx('special', { el: 'fire' }); G.shake(10);
+        if (hittable && Math.abs(opp.x - this.x) < 62) G.resolveHit(this.owner, opp, { dmg: 13, kind: 'mid', heavy: true, launch: true, hs: 0, push: 2, stop: 9, gain: 6, src: 'proj', dir: Math.sign(opp.x - this.owner.x) || 1, el: 'fire', move: 'sig' }); }
+      if (this.t > 26 && this.t % 2 === 0) burst(this.x + rnd(-30, 30), GROUND - rnd(0, 300), 2, ['#facc15', '#f97316', '#fff'], { g: -0.3, lmin: 14, lmax: 24 });
+    }
+  }
+  draw(c) {
+    c.save(); const t = this.t;
+    if (this.type === 'wall') {
+      const h = Math.min(170, t * 14); c.globalAlpha = this.t > this.life - 20 ? (this.life - this.t) / 20 : 0.9;
+      c.fillStyle = 'rgba(186,230,253,.55)'; c.strokeStyle = '#e0f7ff'; c.lineWidth = 3; c.shadowColor = this.col; c.shadowBlur = 18;
+      c.beginPath(); c.moveTo(this.x - 26, GROUND); c.lineTo(this.x - 20, GROUND - h); c.lineTo(this.x, GROUND - h - 18); c.lineTo(this.x + 22, GROUND - h + 6); c.lineTo(this.x + 26, GROUND); c.closePath(); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(this.x - 8, GROUND - 20); c.lineTo(this.x + 4, GROUND - h * 0.7); c.stroke();
+    } else if (this.type === 'trap') {
+      const armed = t > 30, blink = armed && t % 30 < 6;
+      c.fillStyle = '#3f2a14'; c.fillRect(this.x - 3, GROUND - 16, 6, 16);
+      c.fillStyle = blink ? '#86efac' : '#7c2d12'; c.beginPath(); c.ellipse(this.x, GROUND - 16, 16, 9, 0, Math.PI, 0); c.fill();
+      if (blink) { c.shadowColor = '#4ade80'; c.shadowBlur = 20; c.fillStyle = 'rgba(74,222,128,.25)'; c.beginPath(); c.arc(this.x, GROUND - 10, 50, 0, 7); c.fill(); }
+    } else {
+      if (t < 26) { const a = 0.3 + 0.5 * Math.abs(Math.sin(t * 0.4)); c.fillStyle = `rgba(249,115,22,${a})`; c.beginPath(); c.ellipse(this.x, GROUND + 4, 62, 12, 0, 0, 7); c.fill(); }
+      else { const k = 1 - (t - 26) / 26, g = c.createLinearGradient(0, GROUND - 420, 0, GROUND);
+        g.addColorStop(0, 'rgba(250,204,21,0)'); g.addColorStop(0.4, '#f97316'); g.addColorStop(1, '#fff7ed');
+        c.globalAlpha = k; c.shadowColor = '#f97316'; c.shadowBlur = 40; c.fillStyle = g; c.fillRect(this.x - 46 * k - 10, GROUND - 420, 92 * k + 20, 420); }
+    }
+    c.restore();
+  }
+}
+
 /* ---------------------------------------------------------------- FIGHTER */
 const POSE_KEYS = ['hipX', 'hipY', 'shX', 'shY', 'hdX', 'hdY', 'bEx', 'bEy', 'bHx', 'bHy', 'fEx', 'fEy', 'fHx', 'fHy', 'bKx', 'bKy', 'bFx', 'bFy', 'fKx', 'fKy', 'fFx', 'fFy', 'rot'];
 class Fighter {
-  constructor(idx, data, x, facing, pad) {
-    this.idx = idx; this.d = data; this.pad = pad; this.scale = data.boss ? 1.3 : 1.18;
+  constructor(idx, data, x, facing, pad, alt = false) {
+    this.idx = idx; this.alt = alt; this.d = alt && data.alt ? Object.assign({}, data, data.alt) : data; this.pad = pad; this.scale = data.boss ? 1.3 : 1.18;
     const s = data.stats; this.pow = s.power / 90; this.spd = s.speed / 90; this.def = s.defense / 90;
     this.rounds = 0; this.reset(x, facing);
   }
   reset(x, facing) {
     Object.assign(this, { x, y: GROUND, vx: 0, vy: 0, facing, hp: 100, shownHp: 100, meter: 40, state: 'idle', f: 0, move: null, hasHit: false,
       crouch: false, air: false, airUsed: false, stun: 0, freeze: 0, poison: 0, burn: 0, combo: 0, comboT: 0, juggle: 0, t: Math.random() * 10,
-      lastTap: { dir: 0, t: -99 }, frame: 0, dmgTaken: 0, invuln: 0, trail: [], deleted: 0, flash: 0, projCd: 0 });
+      lastTap: { dir: 0, t: -99 }, frame: 0, dmgTaken: 0, invuln: 0, trail: [], deleted: 0, flash: 0, projCd: 0, oc: false, sigT: 0 });
     this.pose = this.targetPose(); this.pad && this.pad.clear();
   }
   get grounded() { return this.y >= GROUND; }
   get hurtTop() { return this.y - (this.crouch && this.grounded ? 96 : 150) * this.scale; }
   canAct() { return this.freeze <= 0 && ['idle', 'walk', 'crouch', 'block'].includes(this.state) && this.grounded; }
-  isInvuln() { return this.invuln > 0 || ['knockdown', 'getup', 'ko', 'deleted', 'grabbed', 'victory'].includes(this.state) || (this.state === 'tele' && this.f < 14) || this.juggle >= 4; }
+  isInvuln() { return this.invuln > 0 || ['knockdown', 'getup', 'ko', 'deleted', 'grabbed', 'victory'].includes(this.state) || (this.state === 'tele' && this.f < 14) || this.state === 'breaker' || (this.state === 'sig' && this.d.sig.type === 'cyclone' && this.f < 8) || this.juggle >= 4; }
   addMeter(v) { this.meter = clamp(this.meter + v, 0, 100); }
 
   start(state, move) {
@@ -679,6 +780,13 @@ class Fighter {
     if (this.poison > 0) this.poison--; if (this.burn > 0) this.burn--;
 
     const P = this.pad, fwd = Math.sign(opp.x - this.x) || this.facing;
+    // OVERCLOCK: below 25% health, +12% damage
+    if (G.state === 'fight' && !this.oc && this.hp > 0 && this.hp < 25) { this.oc = true; popup(this.x, this.y - 210, 'OVERCLOCK', '#ff3b5c', 26); audio.sfx('overclock'); }
+    if (this.oc && this.frame % 4 === 0 && !['ko', 'deleted', 'dizzy'].includes(this.state)) particles.push(new Particle({ x: this.x + rnd(-26, 26), y: this.y - rnd(0, 170), vx: 0, vy: rnd(-2, -0.5), size: rnd(2, 4), color: '#ff3b5c', life: 22, g: 0, shape: 'c' }));
+    // ION BREAKER: block + kick while being hit (50 ION)
+    if (['hitstun', 'blockstun', 'launched'].includes(this.state) && G.state === 'fight' && this.meter >= 50 && P.press('kick') && (P.held.block || P.bl.kick)) {
+      P.use('kick'); this.meter -= 50; this.start('breaker'); this.vx = 0; this.freeze = 0; G.breaker(this, opp); return this.physics(G);
+    }
     if (this.freeze > 0) { this.freeze--; this.vx *= 0.7; this.physics(G); return; }
 
     switch (this.state) {
@@ -690,6 +798,7 @@ class Fighter {
         break;
       case 'attack':
         this.activeCheck(opp, G);
+        if (this.state !== 'attack') break; // parried
         if (this.move === 'uplink' && this.f === 6) { this.vy = -5; }
         if (this.f >= MOVES[this.move].total) this.toNeutral();
         break;
@@ -706,12 +815,14 @@ class Fighter {
           burst(this.x, this.y - 80, 22, [this.d.glow, '#fff'], { g: 0, lmin: 12, lmax: 22 });
         }
         if (this.f >= 13) this.activeCheck(opp, G, 'tele');
-        if (this.f >= MOVES.tele.total) this.toNeutral();
+        if (this.state === 'tele' && this.f >= MOVES.tele.total) this.toNeutral();
         break;
       case 'surge':
         if (this.f >= MOVES.surge.a0 && this.f <= MOVES.surge.a1) G.surgeBeam(this, opp);
         if (this.f >= MOVES.surge.total) this.toNeutral();
         break;
+      case 'sig': this.sigUpdate(opp, G); break;
+      case 'breaker': this.vy = Math.min(this.vy, 0); if (this.f >= 22) this.toNeutral(); break;
       case 'hitstun': if (this.f >= this.stun) this.toNeutral(); break;
       case 'blockstun': if (this.f >= this.stun) { this.state = 'block'; this.f = 0; } break;
       case 'dash': if (this.f >= 12) { this.vx = 0; this.toNeutral(); } break;
@@ -729,6 +840,9 @@ class Fighter {
     const close = Math.abs(opp.x - this.x) < 96 && opp.grounded;
     if (P.press('surge') && this.meter >= 100) { P.use('surge'); this.start('surge', 'surge'); this.vx = 0; G.startSurge(this); return; }
     if (P.press('tele') && this.meter >= MOVES.tele.cost) { P.use('tele'); this.start('tele', 'tele'); this.vx = 0; return; }
+    if (P.press('special') && (P.held.down || P.dn.special) && this.meter >= MOVES.sig.cost && !(this.d.sig.type === 'trap' && hazards.some(h => h.owner === this && h.type === 'trap'))) {
+      P.use('special'); this.start('sig', 'sig'); this.vx = 0; this.crouch = false; audio.sfx('sig'); popup(this.x, this.y - 220 * this.scale, this.d.sig.name, this.d.glow, 22); return;
+    }
     if (P.press('special') && this.meter >= MOVES.special.cost && this.projCd <= 0 && !projectiles.some(p => p.owner === this)) {
       P.use('special'); this.start('special', 'special'); this.vx = 0; this.projCd = 20; audio.sfx('special', { el: this.d.element }); return;
     }
@@ -758,7 +872,64 @@ class Fighter {
     else { this.vx = 0; this.state = 'idle'; }
   }
 
-  toNeutral() { this.move = null; this.f = 0; this.state = this.grounded ? 'idle' : 'jump'; if (!this.grounded) this.airUsed = true; }
+  sigUpdate(opp, G) {
+    const type = this.d.sig.type, f = this.f, dir = this.facing;
+    const hitBox = (x0, x1, y0, y1, h) => {
+      if (this.hasHit) return; const hittable = !opp.isInvuln() || (G.state === 'terminate' && opp.state === 'dizzy'); if (!hittable) return;
+      const s = this.scale, a = this.x + dir * x0 * s, b = this.x + dir * x1 * s, L = Math.min(a, b), R = Math.max(a, b);
+      if (R < opp.x - 30 || L > opp.x + 30 || this.y + y1 * s < opp.hurtTop || this.y + y0 * s > opp.y) return;
+      this.hasHit = true; G.resolveHit(this, opp, Object.assign({ src: 'melee', dir, el: this.d.element, move: 'sig', heavy: true, hs: 18, push: 7, stop: 8, gain: 6 }, h));
+    };
+    switch (type) {
+      case 'cyclone': // rising spinning axe: invulnerable start, launches
+        if (f === 3) { this.vy = -14; this.vx = dir * 3.5; }
+        if (f >= 4 && f <= 24) { hitBox(-50, 96, -240, -10, { dmg: 12, kind: 'mid', launch: true }); if (f % 3 === 0) burst(this.x, this.y - 100, 3, [this.d.glow, '#fff'], { g: 0, smin: 3, smax: 7 }); }
+        if (f > 10 && this.grounded) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'drop': // leap above the rival, dive, shockwave on landing
+        if (f === 2) { this.vy = -17; this.vx = clamp((opp.x - this.x) / 34, -11, 11); }
+        if (f === 22) { this.vy = 24; this.vx = clamp((opp.x - this.x) / 9, -14, 14); }
+        if (f > 22 && !this.grounded) hitBox(-20, 70, -90, 0, { dmg: 10, kind: 'overhead' });
+        if (f > 22 && this.grounded && !this.landed) {
+          this.landed = true; this.vx = 0; G.shake(12); ring(this.x, GROUND - 6, this.d.glow, 160, 8); audio.sfx('heavy');
+          burst(this.x, GROUND - 6, 26, [this.d.glow, '#fff'], { g: 0.3, up: 3 });
+          if (!this.hasHit && opp.grounded && Math.abs(opp.x - this.x) < 160 && !opp.isInvuln()) { this.hasHit = true; G.resolveHit(this, opp, { src: 'proj', dir: Math.sign(opp.x - this.x) || 1, el: this.d.element, move: 'sig', heavy: true, dmg: 11, kind: 'low', knock: true, hs: 0, push: 6, stop: 8, gain: 6 }); }
+        }
+        if (this.landed && (this.sigT = (this.sigT || 0) + 1) > 12) { this.landed = false; this.sigT = 0; (this.state === 'sig' && this.toNeutral()); }
+        break;
+      case 'wall':
+        if (f === 10) { hazards = hazards.filter(h => !(h.owner === this && h.type === 'wall')); hazards.push(new Hazard('wall', this, clamp(this.x + dir * 110, WALL_L, WALL_R))); audio.sfx('special', { el: 'cryo' }); }
+        if (f >= MOVES.sig.total) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'swap':
+        if (f === 8 && opp.state !== 'deleted') {
+          const a = this.x; this.x = opp.x; opp.x = a; this.facing = Math.sign(opp.x - this.x) || 1;
+          burst(this.x, this.y - 90, 24, [this.d.glow, '#000'], { g: 0 }); burst(opp.x, opp.y - 90, 24, [this.d.glow, '#000'], { g: 0 });
+          if (!opp.isInvuln() && opp.grounded && ['idle', 'walk', 'crouch', 'block', 'attack', 'special'].includes(opp.state)) { opp.state = 'hitstun'; opp.f = 0; opp.stun = 24; opp.move = null; popup(opp.x, opp.y - 200, 'SWAPPED', '#c084fc', 20); }
+          audio.sfx('tele');
+        }
+        if (f >= 22) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'trap':
+        if (f === 10) { hazards.push(new Hazard('trap', this, clamp(this.x + dir * 170, WALL_L, WALL_R))); audio.sfx('special', { el: 'spore' }); }
+        if (f >= MOVES.sig.total) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'pillar':
+        if (f === 8) hazards.push(new Hazard('pillar', this, opp.x));
+        if (f >= MOVES.sig.total) (this.state === 'sig' && this.toNeutral());
+        break;
+      case 'seize': // command grab with long reach, steals ION
+        if (f >= 5 && f <= 9 && !this.hasHit && opp.grounded && !opp.isInvuln() && Math.abs(opp.x - this.x) < 140 && !['hitstun', 'launched'].includes(opp.state)) {
+          this.hasHit = true; const steal = Math.min(35, opp.meter); opp.meter -= steal; this.addMeter(steal);
+          popup(opp.x, opp.y - 200, `SEIZED ${steal | 0} ION`, '#ffd166', 20); audio.sfx('grab');
+          G.resolveHit(this, opp, { src: 'melee', dir, el: 'audit', move: 'sig', heavy: true, dmg: 14, kind: 'throw', knock: true, hs: 0, push: 6, stop: 10, gain: 4 });
+        }
+        if (f >= 30) (this.state === 'sig' && this.toNeutral());
+        break;
+    }
+  }
+
+  toNeutral() { this.landed = false; this.sigT = 0; this.move = null; this.f = 0; this.state = this.grounded ? 'idle' : 'jump'; if (!this.grounded) this.airUsed = true; }
 
   physics(G) {
     if (this.state === 'grabbed') return;
@@ -778,7 +949,7 @@ class Fighter {
     if (['hitstun', 'blockstun'].includes(this.state)) this.vx *= 0.86;
     if (this.state === 'knockdown' || this.state === 'ko' || this.state === 'getup') this.vx *= 0.8;
     this.x = clamp(this.x, WALL_L, WALL_R);
-    if (this.state === 'dash' || this.state === 'tele' || this.state === 'surge') { if (this.frame % 2 === 0) this.trail.push({ x: this.x, y: this.y, pose: Object.assign({}, this.pose), facing: this.facing, a: 0.45 }); }
+    if (['dash', 'tele', 'surge', 'sig', 'breaker'].includes(this.state)) { if (this.frame % 2 === 0) this.trail.push({ x: this.x, y: this.y, pose: Object.assign({}, this.pose), facing: this.facing, a: 0.45 }); }
     this.trail.forEach(t => t.a -= 0.05); this.trail = this.trail.filter(t => t.a > 0);
   }
 
@@ -832,6 +1003,17 @@ class Fighter {
         break;
       }
       case 'special': { const a = mf > 6; Object.assign(P, { shX: a ? 14 : -4, hdX: a ? 16 : 0, fEx: a ? 48 : 10, fEy: -118, fHx: a ? 86 : 0, fHy: -120, bEx: a ? 40 : -10, bEy: -110, bHx: a ? 78 : -4, bHy: -112, fKx: 30, fFx: 44, bFx: -36 }); break; }
+      case 'sig': {
+        const ty = this.d.sig.type;
+        if (ty === 'cyclone') { const a = this.t * 9; Object.assign(P, { fEx: Math.cos(a) * 40, fEy: -130 + Math.sin(a) * 10, fHx: Math.cos(a) * 80, fHy: -150, bEx: -Math.cos(a) * 40, bEy: -128, bHx: -Math.cos(a) * 78, bHy: -146, fKx: 16, fKy: -54, fFx: 8, fFy: -14, bKx: -12, bKy: -50, bFx: -18, bFy: -10 }); }
+        else if (ty === 'drop') { if (mf > 22) Object.assign(P, { fKx: 34, fKy: -50, fFx: 60, fFy: -4, bKx: -20, bKy: -70, bFx: -40, bFy: -50, fEx: 30, fEy: -150, fHx: 40, fHy: -190, bEx: -20, bEy: -150, bHx: -26, bHy: -190 });
+          else Object.assign(P, { hipY: -84, bKx: -10, bKy: -60, bFx: -30, bFy: -34, fKx: 24, fKy: -66, fFx: 14, fFy: -30, fEx: 10, fEy: -170, fHx: 20, fHy: -210, bEx: -10, bEy: -168, bHx: 0, bHy: -210 }); }
+        else if (ty === 'seize') Object.assign(P, { shX: 16, hdX: 18, fEx: 56, fEy: -116, fHx: 112, fHy: -120, bEx: 44, bEy: -104, bHx: 96, bHy: -100, fKx: 34, fFx: 52, bFx: -40 });
+        else if (ty === 'trap' || ty === 'pillar') { crouchify(); Object.assign(P, { fEx: 40, fEy: -60, fHx: 70, fHy: -10, bEx: 20, bEy: -64, bHx: 50, bHy: -14 }); }
+        else Object.assign(P, { shX: 12, hdX: 14, fEx: 46, fEy: -128, fHx: 80, fHy: -140, bEx: 38, bEy: -112, bHx: 70, bHy: -118, fKx: 30, fFx: 44, bFx: -36 });
+        break;
+      }
+      case 'breaker': Object.assign(P, { fEx: 40, fEy: -160, fHx: 70, fHy: -196, bEx: -40, bEy: -160, bHx: -70, bHy: -196, fKx: 30, fFx: 46, bKx: -30, bFx: -46, hdY: -156 }); break;
       case 'tele': Object.assign(P, { shX: 10, hdX: 14, fKx: 46, fKy: -96, fFx: 112, fFy: -112, bEx: -24, bEy: -112, bHx: -40, bHy: -96 }); break;
       case 'surge': { const charge = mf < MOVES.surge.freeze; Object.assign(P, charge ? { fEx: 10, fEy: -170, fHx: 20, fHy: -210, bEx: -10, bEy: -168, bHx: 0, bHy: -210, hdY: -150, bKx: -30, bFx: -40, fKx: 30, fFx: 40 }
         : { shX: 14, hdX: 16, fEx: 50, fEy: -116, fHx: 94, fHy: -116, bEx: 48, bEy: -106, bHx: 90, bHy: -108, bKx: -30, bFx: -44, fKx: 32, fFx: 48 }); break; }
@@ -883,7 +1065,8 @@ class Fighter {
     if (P.rot) { c.translate(0, -16); c.rotate(P.rot); }
     const col = (v) => o.white ? '#ffffff' : (o.ghost ? d.glow : v);
     if (o.derez) c.globalAlpha = clamp(1 - o.derez / 60, 0, 1);
-    if (this.state === 'surge' || this.state === 'special' || (this.meter >= 100 && G_STATE_FIGHT())) { c.shadowColor = d.glow; c.shadowBlur = this.state === 'surge' ? 30 : 14; }
+    if (['surge', 'special', 'sig', 'breaker'].includes(this.state) || (this.meter >= 100 && G_STATE_FIGHT())) { c.shadowColor = d.glow; c.shadowBlur = this.state === 'surge' || this.state === 'breaker' ? 30 : 14; }
+    if (this.oc && !o.ghost && !o.white && this.frame % 20 < 10) { c.shadowColor = '#ff3b5c'; c.shadowBlur = 18; }
     c.lineCap = 'round'; c.lineJoin = 'round';
     const limb = (x1, y1, x2, y2, x3, y3, w, cu, cl) => {
       c.strokeStyle = '#03070d'; c.lineWidth = w + 5; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineTo(x3, y3); c.stroke();
@@ -1094,6 +1277,7 @@ class AI {
       if (this.plan !== 'block' || !me.canAct()) { /* fall through to reactive checks */ } else return this.apply(w);
     }
     if (!me.canAct()) {
+      if (['hitstun', 'launched'].includes(me.state) && o.combo >= 3 && me.meter >= 50 && chance(0.03 * (this.lv + 1))) { w.block = true; press('kick'); return this.apply(w); }
       if (me.state === 'jump' && !me.airUsed && dist < 130 && chance(0.25)) press(chance(0.5) ? 'kick' : 'punch');
       return this.apply(w);
     }
@@ -1119,6 +1303,8 @@ class AI {
     if (me.meter >= 100 && dist < 700 && o.grounded && !o.isInvuln() && ['idle', 'walk', 'crouch', 'special', 'attack', 'getup'].includes(o.state) && chance(0.02 + this.lv * 0.015)) { press('surge'); return this.apply(w); }
     // grab a turtle
     if ((o.state === 'block' || o.state === 'blockstun') && dist < 92 && chance(L.grab * 0.15)) { w.block = true; press('punch'); return this.apply(w); }
+    // signature move
+    if (me.meter >= 25 && chance(this.sigChance(dist, o, seen))) { w.down = true; press('special'); return this.apply(w); }
     if (dist > 135) {
       if (dist > 320 && me.meter >= 30 && chance(L.zone)) { press('special'); return this.apply(w); }
       if (dist > 380 && me.meter >= 70 && chance(L.zone * 0.4)) { press('tele'); return this.apply(w); }
@@ -1138,6 +1324,19 @@ class AI {
     if (dist > 80) w[fwdK] = true;
     return this.apply(w);
   }
+  sigChance(dist, o, seen) {
+    const ty = this.me.d.sig.type;
+    switch (ty) {
+      case 'cyclone': return seen.state === 'jump' && dist < 190 ? this.L.anti * 0.3 : (dist < 110 ? 0.006 : 0);
+      case 'drop': return dist > 160 ? 0.012 : 0;
+      case 'wall': return dist > 250 ? ((projectiles.some(p => p.owner === o) || o.meter >= 30) ? 0.02 : 0.004) : 0;
+      case 'swap': return (this.me.x < WALL_L + 80 || this.me.x > WALL_R - 80) ? 0.012 : dist > 300 ? 0.006 : 0;
+      case 'trap': return dist > 110 && !hazards.some(h => h.owner === this.me && h.type === 'trap') ? 0.012 : 0;
+      case 'pillar': return dist > 180 ? 0.014 : 0.006;
+      case 'seize': return dist < 135 ? ((o.state === 'block' || o.state === 'blockstun') ? 0.05 : 0.008) : 0;
+    }
+    return 0;
+  }
   apply(w) {
     PAD_KEYS.forEach(k => this.me.pad.set(k, !!w[k], 'ai'));
   }
@@ -1149,33 +1348,40 @@ const PADS = [new Pad(), new Pad()];
 const GAME = {
   state: 'menu', mode: 'ai', paused: false, p1: null, p2: null, ai: null, ai1: null, arena: ARENAS[0], round: 1, timer: 99 * 60, stateT: 0,
   hitstop: 0, cinematic: 0, shakeAmt: 0, banner: null, slow: 0, tick: 0, whiteFlash: 0, termT: 0, winner: null, ladder: null, ladderIdx: 0,
-  sel: [0, 1], arenaIdx: 0, stats: null, attract: null,
+  sel: [0, 1], alt: [false, false], arenaIdx: 0, stats: null, attract: null, cam: { x: W / 2, z: 1 }, survival: null,
 
   shake(v) { if (SAVE.settings.shake) this.shakeAmt = Math.max(this.shakeAmt, v); },
-  say(text, sub = '', dur = 90, color = '#ffffff') { if (this.sandbox) return; this.banner = { text, sub, t: 0, dur, color }; },
+  say(text, sub = '', dur = 90, color = '#ffffff', voice) { if (this.sandbox) return; this.banner = { text, sub, t: 0, dur, color }; if (voice) announce(voice === true ? text : voice); },
 
   newMatch() {
     const d1 = FIGHTERS[this.sel[0]], d2 = FIGHTERS[this.sel[1]];
-    this.p1 = new Fighter(1, d1, 380, 1, PADS[0]); this.p2 = new Fighter(2, d2, 900, -1, PADS[1]);
-    this.ai = (this.mode === '2p') ? null : new AI(this.p2, this.p1, this.mode === 'arcade' ? Math.min(2, SAVE.settings.diff + (this.ladderIdx >= 4 ? 1 : 0)) : SAVE.settings.diff);
+    const alt2 = this.alt[1] !== (d1.id === d2.id && this.alt[0] === this.alt[1]); // mirror match: P2 auto-swaps colours
+    this.p1 = new Fighter(1, d1, 380, 1, PADS[0], this.alt[0]); this.p2 = new Fighter(2, d2, 900, -1, PADS[1], alt2);
+    const lvl = this.mode === 'arcade' ? Math.min(2, SAVE.settings.diff + (this.ladderIdx >= 4 ? 1 : 0))
+      : this.mode === 'survival' ? Math.min(2, SAVE.settings.diff + Math.floor((this.survival ? this.survival.wins : 0) / 4)) : SAVE.settings.diff;
+    this.ai = (this.mode === '2p') ? null : new AI(this.p2, this.p1, lvl);
     if (this.mode === 'training') { this.ai.dummy = 'STAND'; }
     this.attract = null;
     this.round = 1; floorPix = []; this.stats = { p1: { hits: 0, maxCombo: 0, dmg: 0 }, p2: { hits: 0, maxCombo: 0, dmg: 0 } };
     SAVE.stats.played++; persist();
+    if (this.mode === 'survival' && !this.survival) this.survival = { wins: 0, hp: 100 };
     audio.playMusic(this.arena.id === 'root' || d2.boss ? 'boss' : 'fight');
     this.startRound();
   },
   startRound() {
     this.p1.reset(380, 1); this.p2.reset(900, -1);
-    projectiles = []; particles = []; popups = [];
+    projectiles = []; particles = []; popups = []; hazards = []; rings = [];
+    if (this.mode === 'survival' && this.survival) this.p1.hp = this.p1.shownHp = this.survival.hp;
+    this.cam = { x: W / 2, z: 1 };
     this.timer = (this.mode === 'training' ? 0 : SAVE.settings.timer) * 60;
     this.state = 'intro'; this.stateT = 0; this.hitstop = 0; this.cinematic = 0; this.slow = 0; this.winner = null;
     audio.sfx('gong');
     const last = this.p1.rounds === this.need() - 1 && this.p2.rounds === this.need() - 1;
     if (typeof UI !== 'undefined') setTimeout(() => UI.updateTouch(), 0);
-    this.say(this.mode === 'training' ? 'TRAINING' : last ? 'FINAL ROUND' : `ROUND ${this.round}`, `${this.p1.d.name}  VS  ${this.p2.d.name}`, 80, '#00c6ff');
+    const label = this.mode === 'training' ? 'TRAINING' : this.mode === 'survival' ? `CHALLENGER ${this.survival.wins + 1}` : last ? 'FINAL ROUND' : `ROUND ${this.round}`;
+    this.say(label, `${this.p1.d.name}  VS  ${this.p2.d.name}`, 80, '#00c6ff', label.replace('CHALLENGER', 'challenger'));
   },
-  need() { return SAVE.settings.rounds; },
+  need() { return this.mode === 'survival' ? 1 : SAVE.settings.rounds; },
 
   /* ---------- combat resolution ---------- */
   resolveHit(att, def, h) {
@@ -1186,6 +1392,15 @@ const GAME = {
     }
     const blocking = (def.state === 'block' || def.state === 'blockstun') && def.grounded && h.kind !== 'throw';
     const okBlock = blocking && !(h.kind === 'low' && !def.crouch) && !(h.kind === 'overhead' && def.crouch);
+    if (okBlock && def.pad && def.pad.age.block <= 6 && h.kind !== 'throw' && h.src !== 'surge') {
+      // PERFECT GUARD: block tapped just in time
+      def.state = 'blockstun'; def.f = 0; def.stun = 3; def.vx = 0; def.addMeter(15); def.flash = 6;
+      if (h.src === 'melee' && att.grounded) { att.state = 'hitstun'; att.f = 0; att.stun = 16; att.move = null; att.vx = -h.dir * 5; }
+      this.hitstop = 9; audio.sfx('parry'); ring(def.x + def.facing * 24, def.y - 110, '#ffffff', 80, 4);
+      popup(def.x, def.y - 205, 'PERFECT GUARD', '#ffffff', 22);
+      if (def === this.p1 && this.ai && !this.sandbox) { SAVE.stats.parries++; }
+      return;
+    }
     if (okBlock) {
       const chip = h.src === 'melee' ? 0 : h.dmg * (h.src === 'surge' ? 0.25 : 0.18) * att.pow / def.def;
       def.hp = Math.max(h.src === 'surge' ? 0 : Math.min(def.hp, 1), def.hp - chip);
@@ -1198,6 +1413,7 @@ const GAME = {
     }
     att.combo++; att.comboT = 70; S.hits++; S.maxCombo = Math.max(S.maxCombo, att.combo);
     let dmg = h.dmg * att.pow / def.def * (att.combo > 3 ? Math.max(0.5, Math.pow(0.88, att.combo - 3)) : 1);
+    if (att.oc) dmg *= 1.12;
     let triple = false;
     if (h.move === 'punch' && att.combo >= 3 && att.combo % 3 === 0) { dmg *= 1.6; triple = true; popup(def.x, def.y - 190, 'TRIPLE!', '#ffd166', 26); }
     if (def.state === 'launched') dmg *= 0.8;
@@ -1213,6 +1429,7 @@ const GAME = {
     } else { def.state = 'hitstun'; def.f = 0; def.move = null; def.stun = h.hs || 14; def.vx = h.dir * (h.push || 5); }
     if (h.src !== 'melee') this.applyElement(h.el, att, def);
     this.hitstop = h.stop || 5; this.shake(h.heavy ? 9 : 4);
+    if (h.heavy) ring(def.x - h.dir * 6, def.y - (def.crouch ? 70 : 112) * def.scale, def.d.glow, h.src === 'surge' ? 180 : 100, h.src === 'surge' ? 10 : 5);
     audio.sfx(h.heavy ? 'heavy' : 'hit');
     burst(def.x - h.dir * 6, def.y - (def.crouch ? 70 : 112) * def.scale, h.heavy ? 26 : 12, [def.d.glow, '#ffffff', def.d.c1], { dir: h.dir, floor: true, g: 0.45, up: 3, lmin: 30, lmax: 60 });
     if (!this.sandbox && navigator.vibrate && att === this.p1 && h.heavy) { try { navigator.vibrate(18); } catch (e) { /* no haptics */ } }
@@ -1236,6 +1453,16 @@ const GAME = {
     popup(att.x, att.y - 190, 'DATA GRAB', '#00c6ff', 22);
     this.resolveHit(att, def, { ...MOVES.grab, move: 'grab', src: 'melee', dir: -att.facing, knock: true, el: att.d.element });
   },
+  breaker(f, opp) {
+    audio.sfx('breaker'); this.shake(10); ring(f.x, f.y - 100, f.d.glow, 220, 10); ring(f.x, f.y - 100, '#ffffff', 160, 4);
+    burst(f.x, f.y - 100, 40, [f.d.glow, '#fff'], { g: 0, smin: 4, smax: 12 });
+    popup(f.x, f.y - 220, 'ION BREAKER', f.d.glow, 26); if (!SAVE.settings.reduceFlash) this.whiteFlash = 4;
+    if (f.y < GROUND) { f.vy = 2; }
+    if (Math.abs(opp.x - f.x) < 240 && !opp.isInvuln()) {
+      const dir = Math.sign(opp.x - f.x) || 1; opp.state = opp.grounded ? 'hitstun' : 'launched'; opp.f = 0; opp.stun = 18; opp.move = null; opp.vx = dir * 14; opp.combo = 0; opp.comboT = 0;
+    }
+    f.combo = 0;
+  },
   startSurge(f) {
     this.cinematic = MOVES.surge.freeze; audio.sfx('surge'); f.hasHit = false;
     this.say(f.d.surge, `${f.d.name} · ION SURGE`, 70, f.d.glow);
@@ -1258,10 +1485,10 @@ const GAME = {
       this.state = 'terminate'; this.stateT = 0; this.termT = 240; this.winner = winner;
       loser.hp = 1; loser.state = 'dizzy'; loser.f = 0; loser.vx = 0; loser.vy = 0; loser.y = GROUND; loser.freeze = 0; loser.poison = 0; loser.burn = 0;
       projectiles = projectiles.filter(p => p.owner === winner);
-      audio.sfx('gong'); this.say('TERMINATE!', 'LAND A KICK · UPLINK · SPECIAL · BLINK · SURGE', 150, '#ff3b5c');
+      audio.sfx('gong'); this.say('TERMINATE!', 'LAND A KICK · UPLINK · SPECIAL · BLINK · SURGE', 150, '#ff3b5c', 'terminate');
     } else {
       this.state = 'ko'; this.stateT = 0; this.winner = winner; this.slow = 50;
-      audio.sfx('ko'); this.say('SHUTDOWN', '', 110, '#ff3b5c'); this.shake(16);
+      audio.sfx('ko'); this.say('SHUTDOWN', '', 110, '#ff3b5c', 'shutdown'); this.shake(16);
       if (loser.state !== 'launched') { loser.state = 'launched'; loser.vy = -9; loser.vx = (Math.sign(loser.x - winner.x) || 1) * 6; loser.y = Math.min(loser.y, GROUND - 2); }
     }
   },
@@ -1269,7 +1496,7 @@ const GAME = {
     this.state = 'deleted'; this.stateT = 0; def.state = 'deleted'; def.deleted = 0; def.hp = 0; att.state = 'victory';
     audio.sfx('delete'); this.shake(26); if (!SAVE.settings.reduceFlash) this.whiteFlash = 12;
     burst(def.x, def.y - 90, 90, [def.d.glow, def.d.c1, def.d.c2, '#ffffff'], { g: 0.25, smin: 2, smax: 11, up: 3, lmin: 50, lmax: 110, floor: true });
-    this.say('DELETED', `${att.d.name} WINS · TOTAL OVERRIDE`, 200, '#ff3b5c');
+    this.say('DELETED', `${att.d.name} WINS · TOTAL OVERRIDE`, 200, '#ff3b5c', 'deleted');
     if (att === this.p1 && this.ai) { SAVE.stats.deletes++; persist(); }
     att.rounds++;
   },
@@ -1280,7 +1507,7 @@ const GAME = {
       winner.rounds++; winner.state = 'victory';
       const perfect = winner.dmgTaken < 0.01;
       if (perfect && winner === this.p1 && this.ai) { SAVE.stats.perfects++; persist(); }
-      this.say(`${winner.d.name} WINS`, perfect ? 'PERFECT · ZERO DAMAGE' : how === 'time' ? 'TIME OUT' : `ROUND ${this.round}`, 140, winner.d.glow);
+      this.say(`${winner.d.name} WINS`, perfect ? 'PERFECT · ZERO DAMAGE' : how === 'time' ? 'TIME OUT' : `ROUND ${this.round}`, 140, winner.d.glow, perfect ? `${winner.d.name} wins. perfect` : `${winner.d.name} wins`);
       if (loser.state !== 'ko' && loser.state !== 'launched') { loser.state = 'ko'; loser.f = 0; }
     } else this.say('DRAW', 'NO ROUND AWARDED', 120, '#ffffff');
     audio.sfx('gong');
@@ -1292,6 +1519,10 @@ const GAME = {
       const st = SAVE.stats;
       if (humanWon) { st.wins++; st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak); } else { st.losses++; st.streak = 0; }
       persist();
+    }
+    if (this.mode === 'survival' && this.survival) {
+      if (humanWon) { this.survival.wins++; this.survival.hp = Math.min(100, this.p1.hp + 25); }
+      SAVE.stats.survivalBest = Math.max(SAVE.stats.survivalBest, this.survival.wins); persist();
     }
     UI.showResult(winner);
   },
@@ -1309,7 +1540,7 @@ const GAME = {
     const p1 = this.p1, p2 = this.p2;
 
     switch (this.state) {
-      case 'intro': if (this.stateT === 85) { this.state = 'fight'; this.stateT = 0; this.say(this.mode === 'training' ? 'GO' : 'ENGAGE!', '', 50, '#ffd166'); audio.sfx('gong'); } break;
+      case 'intro': if (this.stateT === 85) { this.state = 'fight'; this.stateT = 0; this.say(this.mode === 'training' ? 'GO' : 'ENGAGE!', '', 50, '#ffd166', 'engage'); audio.sfx('gong'); } break;
       case 'fight':
         if (this.mode !== 'training' && this.cinematic <= 0 && this.hitstop <= 0) {
           this.timer--; if (this.timer % 60 === 0 && this.timer <= 600 && this.timer > 0) audio.sfx('tick');
@@ -1376,12 +1607,14 @@ const GAME = {
         }
       }
       projectiles = projectiles.filter(p => p.alive);
+      hazards.forEach(h => h.update(this, h.owner === p1 ? p2 : p1)); hazards = hazards.filter(h => h.alive);
       p1.updatePose(); p2.updatePose();
     }
     PADS.forEach(p => p.tick());
     this.stepFx();
   },
   stepFx() {
+    rings.forEach(r => { r.r += (r.max - r.r) * 0.25; r.life--; }); rings = rings.filter(r => r.life > 0);
     particles.forEach(p => p.update()); particles = particles.filter(p => p.life > 0);
     popups.forEach(p => { p.y -= 1; p.life--; }); popups = popups.filter(p => p.life > 0);
   },
@@ -1410,13 +1643,14 @@ const GAME = {
       const dx = A.fb.x - A.fa.x; if (Math.abs(dx) < 56 && Math.abs(A.fa.y - A.fb.y) < 110) { const o = (56 - Math.abs(dx)) / 2, s = dx >= 0 ? 1 : -1; A.fa.x -= s * o; A.fb.x += s * o; }
       for (const pr of projectiles) { pr.update(); const tg = pr.owner === A.fa ? A.fb : A.fa; if (pr.alive && !tg.isInvuln() && Math.abs(pr.x - tg.x) < 40 && pr.y > tg.hurtTop && pr.y < tg.y) { pr.alive = false; this.resolveHit(pr.owner, tg, { dmg: pr.dmg, kind: 'mid', heavy: true, hs: 18, push: 7, stop: 6, gain: 6, src: 'proj', dir: pr.dir, el: pr.el }); } }
       projectiles = projectiles.filter(p => p.alive);
+      hazards.forEach(h => h.update(this, h.owner === A.fa ? A.fb : A.fa)); hazards = hazards.filter(h => h.alive);
       A.fa.updatePose(); A.fb.updatePose(); A.fa.pad.tick(); A.fb.pad.tick();
       [A.fa, A.fb].forEach(f => { if (f.hp < 25) f.hp = 100; });
     }
     this.cinematic = 0; this.stepFx();
     SAVE.settings.muted = muted; SAVE.settings.shake = shakeOn;
     Object.assign(this, saved); this.sandbox = false;
-    if (A.t > 60 * 25) { this.attract = null; projectiles = []; particles = []; floorPix = []; }
+    if (A.t > 60 * 25) { this.attract = null; projectiles = []; particles = []; floorPix = []; hazards = []; rings = []; }
   }
 };
 
@@ -1426,19 +1660,33 @@ function render() {
   if (GAME.shakeAmt > 0.5) { c.translate(rnd(-1, 1) * GAME.shakeAmt, rnd(-1, 1) * GAME.shakeAmt); GAME.shakeAmt *= 0.86; } else GAME.shakeAmt = 0;
   const attract = (GAME.state === 'menu' || GAME.state === 'select') && GAME.attract;
   const arena = attract ? GAME.attract.arena : GAME.arena;
-  drawArena(c, arena);
   const f1 = attract ? GAME.attract.fa : GAME.p1, f2 = attract ? GAME.attract.fb : GAME.p2;
+  // dynamic camera: zooms in as fighters close, harder on supers and finishers
+  const cam = GAME.cam;
+  if (f1 && f2 && SAVE.settings.cam) {
+    let tz = clamp(1.32 - Math.abs(f1.x - f2.x) / 1000, 1, 1.18), tx = (f1.x + f2.x) / 2;
+    const surger = [f1, f2].find(f => f.state === 'surge' && f.f < MOVES.surge.freeze);
+    if (surger) { tz = 1.32; tx = surger.x; }
+    if (['terminate', 'deleted', 'ko'].includes(GAME.state) && !attract) { tz = Math.max(tz, 1.22); }
+    cam.z = lerp(cam.z, tz, 0.07); cam.x = lerp(cam.x, tx, 0.1);
+  } else { cam.z = lerp(cam.z, 1, 0.1); cam.x = W / 2; }
+  c.save();
+  if (cam.z > 1.001) { const vw = W / cam.z, vx = clamp(cam.x - vw / 2, 0, W - vw), vy = (H - H / cam.z) * 0.86; c.scale(cam.z, cam.z); c.translate(-vx, -vy); }
+  drawArena(c, arena);
   if (f1 && f2) {
     if (GAME.cinematic > 0 || [f1, f2].some(f => f.state === 'surge' && f.f < MOVES.surge.freeze)) { c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(0, 0, W, H); }
     if (GAME.state === 'deleted') { c.fillStyle = 'rgba(20,0,6,.45)'; c.fillRect(0, 0, W, H); }
     // draw the attacker last so strikes overlap the defender
-    const order = (['attack', 'special', 'tele', 'surge'].includes(f1.state) ? [f2, f1] : [f1, f2]);
+    const order = (['attack', 'special', 'tele', 'surge', 'sig', 'breaker'].includes(f1.state) ? [f2, f1] : [f1, f2]);
+    hazards.forEach(h => h.draw(c));
     order.forEach(f => f.draw(c, GAME));
+    rings.forEach(r => { c.save(); c.globalAlpha = r.life / 18; c.strokeStyle = r.color; c.lineWidth = r.w * r.life / 18; c.shadowColor = r.color; c.shadowBlur = 12; c.beginPath(); c.arc(r.x, r.y, r.r, 0, 7); c.stroke(); c.restore(); });
     [f1, f2].forEach(f => { if (f.beamOn > 0) { drawBeam(c, f); f.beamOn--; } });
     projectiles.forEach(p => p.draw(c));
     particles.forEach(p => p.draw(c));
     popups.forEach(p => { c.save(); c.globalAlpha = clamp(p.life / 25, 0, 1); c.font = `900 ${p.size}px Orbitron,Arial`; c.textAlign = 'center'; c.fillStyle = p.color; c.shadowColor = '#000'; c.shadowBlur = 8; c.fillText(p.text, p.x, p.y); c.restore(); });
   }
+  c.restore();
   c.restore();
   if (!attract && GAME.p1 && GAME.state !== 'menu' && GAME.state !== 'select') drawHUD(c);
   if (attract) drawAttractTag(c);
@@ -1517,8 +1765,8 @@ function drawHUD(c) {
     c.font = '700 11px Orbitron,Arial'; c.textAlign = left ? 'left' : 'right'; c.fillStyle = full ? '#ffd166' : '#8aa4bf';
     c.fillText(full ? 'ION · SURGE READY' + (left ? ' [Y]' : GAME.mode === '2p' ? ' [O]' : '') : 'ION ' + (f.meter | 0), left ? mx + mw + 8 : mx - 8, my + 10);
     // status chips
-    const chips = []; if (f.poison > 0) chips.push(['POISON', '#4ade80']); if (f.burn > 0) chips.push(['BURN', '#f97316']); if (f.freeze > 0) chips.push(['FROZEN', '#7dd3fc']);
-    chips.forEach((ch, k) => { c.fillStyle = ch[1]; c.font = '700 11px Orbitron,Arial'; c.fillText(ch[0], left ? mx + k * 70 : mx + mw - k * 70, my + 28); });
+    const chips = []; if (f.oc) chips.push(['OVERCLOCK', '#ff3b5c']); if (f.poison > 0) chips.push(['POISON', '#4ade80']); if (f.burn > 0) chips.push(['BURN', '#f97316']); if (f.freeze > 0) chips.push(['FROZEN', '#7dd3fc']);
+    chips.forEach((ch, k) => { c.fillStyle = ch[1]; c.font = '700 11px Orbitron,Arial'; c.fillText(ch[0], left ? mx + k * 86 : mx + mw - k * 86, my + 28); });
     // combo
     if (f.combo >= 2 && f.comboT > 0) {
       c.save(); c.globalAlpha = clamp(f.comboT / 30, 0, 1); c.font = '900 34px Orbitron,Arial'; c.textAlign = left ? 'left' : 'right';
@@ -1535,7 +1783,7 @@ function drawHUD(c) {
   c.font = '900 34px Orbitron,Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = GAME.timer < 600 && GAME.mode !== 'training' && GAME.tick % 30 < 15 ? '#ff3b5c' : '#ffd166';
   c.fillText(secs, 0, 2); c.restore();
   c.save(); c.font = '700 12px Orbitron,Arial'; c.textAlign = 'center'; c.fillStyle = '#8aa4bf';
-  c.fillText(GAME.mode === 'arcade' ? `ARCADE ${GAME.ladderIdx + 1}/${GAME.ladder.length} · ${GAME.arena.name}` : `${GAME.arena.name}`, W / 2, 104);
+  c.fillText(GAME.mode === 'survival' && GAME.survival ? `SURVIVAL · WINS ${GAME.survival.wins} · BEST ${SAVE.stats.survivalBest} · ${GAME.arena.name}` : GAME.mode === 'arcade' ? `ARCADE ${GAME.ladderIdx + 1}/${GAME.ladder.length} · ${GAME.arena.name}` : `${GAME.arena.name}`, W / 2, 104);
   if (GAME.mode === 'training') { c.fillStyle = '#ffd166'; c.fillText(`DUMMY: ${GAME.ai.dummy} · [TAB] change`, W / 2, 124); }
   if (GAME.state === 'terminate') { c.font = '900 20px Orbitron,Arial'; c.fillStyle = '#ff3b5c'; c.fillText(`TERMINATE · ${(GAME.termT / 60).toFixed(1)}s`, W / 2, 150); }
   c.restore();
@@ -1626,12 +1874,15 @@ const UI = {
     GAME.mode = mode; GAME.state = 'select'; this.show('select'); audio.sfx('confirm');
     if (FIGHTERS[GAME.sel[0]].boss && !SAVE.unlocked.auditor) GAME.sel[0] = 0;
     if (GAME.sel[1] === GAME.sel[0] && mode !== '2p') GAME.sel[1] = (GAME.sel[0] + 1) % 6;
-    $('selSub').textContent = mode === 'arcade' ? 'ARCADE: pick your avatar (A/D/W/S or click) · six rivals and a boss await'
+    autoFull();
+    const solo = mode === 'arcade' || mode === 'survival';
+    $('selSub').textContent = mode === 'survival' ? 'SURVIVAL: one round per rival, health carries over (+25 per win) · how long can you last?'
+      : mode === 'arcade' ? 'ARCADE: pick your avatar (A/D/W/S or click) · six rivals and a boss await'
       : mode === '2p' ? 'P1: A/D/W/S + F · P2: arrows + J · Click = P1 · Right-click / Shift-click = P2'
       : 'Pick yours (A/D or click) · rival with arrows or right-click / Shift-click';
-    $('arenaPick').classList.toggle('hidden', mode === 'arcade');
+    $('arenaPick').classList.toggle('hidden', solo);
     $('diffPick').classList.toggle('hidden', mode === '2p' || mode === 'training');
-    $('p2info').parentElement.querySelector('.vs').classList.toggle('hidden', mode === 'arcade');
+    $('p2info').parentElement.querySelector('.vs').classList.toggle('hidden', solo);
     this.buildGrid(); this.refreshSelect();
   },
   buildGrid() {
@@ -1648,21 +1899,21 @@ const UI = {
     });
   },
   pick(p, i) {
-    if (p === 1 && GAME.mode === 'arcade') p = 0;
+    if (p === 1 && (GAME.mode === 'arcade' || GAME.mode === 'survival')) p = 0;
     GAME.sel[p] = i; audio.sfx('select'); this.refreshSelect();
   },
   refreshSelect() {
     document.querySelectorAll('#grid .card').forEach(card => {
-      const i = +card.dataset.i, a = GAME.sel[0] === i, b = GAME.sel[1] === i && GAME.mode !== 'arcade';
+      const i = +card.dataset.i, solo = GAME.mode === 'arcade' || GAME.mode === 'survival', a = GAME.sel[0] === i, b = GAME.sel[1] === i && !solo;
       card.classList.toggle('p1', a); card.classList.toggle('p2', b);
       card.querySelector('.tags').innerHTML = (a ? '<span class="tag p1">P1</span>' : '') + (b ? `<span class="tag p2">${GAME.mode === '2p' ? 'P2' : 'CPU'}</span>` : '');
-      drawPortrait(card.querySelector('canvas'), FIGHTERS[i], a || b);
+      drawPortrait(card.querySelector('canvas'), FIGHTERS[i], a || b, a ? GAME.alt[0] : b ? GAME.alt[1] : false);
     });
     const info = (f, who) => `<div class="n" style="color:${f.c1}">${who} · ${f.name}</div><div>${f.title}</div><div style="font-style:italic;margin:2px 0 4px">“${f.quote}”</div>
       <div class="stat">POWER <i style="width:${(f.stats.power - 60) * 2.5}px"></i></div><div class="stat">SPEED <i style="width:${(f.stats.speed - 60) * 2.5}px"></i></div><div class="stat">DEFENCE <i style="width:${(f.stats.defense - 60) * 2.5}px"></i></div>
-      <div style="margin-top:3px">BLAST: <b style="color:#ffd166">${f.proj}</b> · BLINK: <b style="color:#00c6ff">${f.tele}</b> · SURGE: <b style="color:#ff3b5c">${f.surge}</b></div>`;
+      <div style="margin-top:3px">BLAST: <b style="color:#ffd166">${f.proj}</b> · SIG: <b style="color:#4ade80">${f.sig.name}</b> · BLINK: <b style="color:#00c6ff">${f.tele}</b> · SURGE: <b style="color:#ff3b5c">${f.surge}</b></div>`;
     $('p1info').innerHTML = info(FIGHTERS[GAME.sel[0]], 'P1');
-    $('p2info').innerHTML = GAME.mode === 'arcade' ? '<div class="n">6 RIVALS + BOSS</div><div>Win every fight. The Auditor waits in the Root Cavern.</div>' : info(FIGHTERS[GAME.sel[1]], GAME.mode === '2p' ? 'P2' : 'CPU');
+    $('p2info').innerHTML = GAME.mode === 'survival' ? `<div class="n">ENDLESS CHALLENGERS</div><div>Best run on this device: <b style="color:#ffd166">${SAVE.stats.survivalBest}</b> wins.</div>` : GAME.mode === 'arcade' ? '<div class="n">6 RIVALS + BOSS</div><div>Win every fight. The Auditor waits in the Root Cavern.</div>' : info(FIGHTERS[GAME.sel[1]], GAME.mode === '2p' ? 'P2' : 'CPU');
     $('arenaName').textContent = ARENAS[GAME.arenaIdx].name; $('diffName').textContent = DIFFS[SAVE.settings.diff];
   },
   moveSel(p, dx, dy) {
@@ -1679,13 +1930,22 @@ const UI = {
       GAME.ladder = FIGHTERS[me].boss ? pool.slice(0, 6) : [...pool.slice(0, 5), 6]; GAME.ladderIdx = 0;
       return this.openLadder();
     }
+    autoFull();
+    if (GAME.mode === 'survival') { GAME.survival = null; this.survivalRival(); this.show(null); return GAME.newMatch(); }
     GAME.arena = ARENAS[GAME.arenaIdx];
     this.show(null); GAME.newMatch();
+  },
+  survivalRival() {
+    const wins = GAME.survival ? GAME.survival.wins : 0;
+    const pool = FIGHTERS.map((f, i) => i).filter(i => i !== GAME.sel[0] && (!FIGHTERS[i].boss || wins >= 5));
+    GAME.sel[1] = (wins > 0 && wins % 6 === 5 && GAME.sel[0] !== 6) ? 6 : pool[(Math.random() * pool.length) | 0];
+    GAME.alt[1] = chance(0.3);
+    GAME.arena = FIGHTERS[GAME.sel[1]].boss ? ARENAS[4] : ARENAS[(Math.random() * 4) | 0];
   },
   openLadder() {
     this.show('ladder'); GAME.state = 'select';
     const n = GAME.ladder.length, i = GAME.ladderIdx, opp = FIGHTERS[GAME.ladder[i]];
-    $('ladSub').textContent = `FIGHT ${i + 1} / ${n} · ${opp.name} · ${opp.title}`;
+    $('ladSub').innerHTML = `FIGHT ${i + 1} / ${n} · ${opp.name} · ${opp.title}<br><i style="color:${opp.c1};letter-spacing:1px;text-transform:none;font-size:15px">${opp.name}: “${opp.taunt}”</i>`;
     const c = $('ladCv').getContext('2d'); c.clearRect(0, 0, 960, 300);
     const sw = 960 / n;
     GAME.ladder.forEach((fi, k) => {
@@ -1718,7 +1978,12 @@ const UI = {
         SAVE.stats.arcadeClears++; SAVE.unlocked.auditor = true; persist(); primary = 'NEW ARCADE RUN'; act = 'newArcade';
       } else if (won) { sub = `Rival ${GAME.ladderIdx + 1} of ${GAME.ladder.length} deleted.`; primary = 'NEXT RIVAL ▶'; act = 'next'; }
       else { title = 'SYSTEM FAILURE'; sub = 'Continue? Your ladder progress is kept.'; primary = 'CONTINUE'; act = 'rematch'; }
+    } else if (GAME.mode === 'survival') {
+      const sv = GAME.survival || { wins: 0 };
+      if (won) { title = `${sv.wins} DOWN`; sub = `Health carried: ${Math.round(sv.hp)}% · next challenger incoming`; primary = 'NEXT CHALLENGER ▶'; act = 'survNext'; }
+      else { title = 'SURVIVAL OVER'; sub = `${sv.wins} wins · best ${SAVE.stats.survivalBest}`; primary = 'TRY AGAIN'; act = 'survRestart'; }
     } else if (human) sub = won ? 'You win. The Grid remembers.' : 'Defeated. Re-route and retry.';
+    sub += `<br><i style="color:${winner.d.c1};text-transform:none;letter-spacing:1px;font-size:15px">${winner.d.name}: “${winner.d.win}”</i>`;
     const el = $('result');
     el.innerHTML = `<h2 class="h1" style="font-size:clamp(28px,5vw,60px)">${title}</h2><div class="sub">${sub}</div>
       <div class="panel" style="max-width:560px;margin-top:14px"><div class="cols">
@@ -1738,6 +2003,8 @@ const UI = {
     const a = this.resultAct;
     if (a === 'next') { GAME.ladderIdx++; this.openLadder(); }
     else if (a === 'newArcade') this.openSelect('arcade');
+    else if (a === 'survNext') { this.survivalRival(); this.show(null); GAME.newMatch(); }
+    else if (a === 'survRestart') { GAME.survival = null; this.survivalRival(); this.show(null); GAME.newMatch(); }
     else { this.show(null); GAME.newMatch(); }
   },
   togglePause(force) {
@@ -1770,6 +2037,8 @@ const UI = {
       else if (c === 'ArrowLeft') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, -1, 0); else if (c === 'ArrowRight') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, 1, 0);
       else if (c === 'ArrowUp') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, 0, -1); else if (c === 'ArrowDown') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, 0, 1);
       else if (c === 'Enter' || c === 'KeyF' || c === 'KeyJ') this.go();
+      else if (c === 'KeyG') { GAME.alt[0] = !GAME.alt[0]; audio.sfx('select'); this.refreshSelect(); }
+      else if (c === 'KeyK' && GAME.mode !== 'arcade' && GAME.mode !== 'survival') { GAME.alt[1] = !GAME.alt[1]; audio.sfx('select'); this.refreshSelect(); }
       else if (c === 'Escape') this.toTitle();
       return true;
     }
@@ -1784,17 +2053,17 @@ const UI = {
   },
   leaveSplash() {
     if (this.cur !== 'splash') return;
-    audio.init(); clearTimeout(this.splashT); this.toTitle();
+    audio.init(); autoFull(); clearTimeout(this.splashT); this.toTitle();
   }
 };
 // result overlay container
 (() => { const d = document.createElement('div'); d.id = 'result'; d.className = 'ov hidden'; $('stage').insertBefore(d, $('touch')); })();
 
-function drawPortrait(cnv, f, active) {
+function drawPortrait(cnv, f, active, alt = false) {
   const c = cnv.getContext('2d'); c.clearRect(0, 0, cnv.width, cnv.height);
   const g = c.createRadialGradient(110, 140, 10, 110, 140, 130); g.addColorStop(0, f.glow + '55'); g.addColorStop(1, 'rgba(0,0,0,0)');
   c.fillStyle = g; c.fillRect(0, 0, cnv.width, cnv.height);
-  const tmp = new Fighter(1, f, 0, 1, null); tmp.state = active ? 'victory' : 'idle'; tmp.t = 2; tmp.meter = 0; tmp.pose = tmp.targetPose();
+  const tmp = new Fighter(1, f, 0, 1, null, alt); tmp.state = active ? 'victory' : 'idle'; tmp.t = 2; tmp.meter = 0; tmp.pose = tmp.targetPose();
   c.save(); c.translate(110, 224); c.scale(0.92, 0.92); tmp.renderBody(c, 0, 0, 1, tmp.pose, {}); c.restore();
 }
 function share(text) {
@@ -1813,6 +2082,7 @@ document.querySelector('#menu [data-act="moves"]').addEventListener('click', () 
 document.querySelector('#menu [data-act="options"]').addEventListener('click', () => UI.modal('options'));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { b.closest('.ov').classList.add('hidden'); if (UI.fighting() && UI.cur === null) GAME.paused = false; UI.updateTouch(); }));
 $('selBack').onclick = () => UI.toTitle();
+$('selAlt').onclick = (e) => { const p = e.shiftKey && GAME.mode !== 'arcade' && GAME.mode !== 'survival' ? 1 : 0; GAME.alt[p] = !GAME.alt[p]; audio.sfx('select'); UI.refreshSelect(); };
 $('selGo').onclick = () => UI.go();
 $('arenaPick').querySelectorAll('button').forEach(b => b.onclick = () => { GAME.arenaIdx = (GAME.arenaIdx + +b.dataset.d + ARENAS.length) % ARENAS.length; audio.sfx('select'); UI.refreshSelect(); });
 $('diffPick').querySelectorAll('button').forEach(b => b.onclick = () => { SAVE.settings.diff = (SAVE.settings.diff + +b.dataset.d + 3) % 3; persist(); syncOptions(); UI.refreshSelect(); });
@@ -1827,12 +2097,18 @@ $('hMenu').onclick = () => UI.toTitle();
 $('hMoves').onclick = () => { if (UI.fighting() && !GAME.paused) UI.togglePause(true); UI.modal('moves'); };
 $('hOptions').onclick = () => { if (UI.fighting() && !GAME.paused) UI.togglePause(true); UI.modal('options'); };
 $('hSound').onclick = () => { audio.init(); toggleMute(); };
+function autoFull() {
+  if (!SAVE.settings.autoFull || document.fullscreenElement || !document.fullscreenEnabled || QS.get('full') === '0') return;
+  const st = document.documentElement;
+  try { const p = st.requestFullscreen({ navigationUI: 'hide' }); if (p && p.then) p.then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); }).catch(() => {}); } catch (e) { /* not allowed here */ }
+}
 function goFull() {
-  const st = $('stage');
+  const st = document.documentElement;
   const p = document.fullscreenElement ? document.exitFullscreen() : (st.requestFullscreen ? st.requestFullscreen() : Promise.reject());
   Promise.resolve(p).then(() => { if (screen.orientation && screen.orientation.lock && document.fullscreenElement) screen.orientation.lock('landscape').catch(() => {}); }).catch(() => {});
 }
 $('hFull').onclick = goFull; $('rotFull').onclick = goFull;
+document.addEventListener('dblclick', (e) => { if (e.target === cv) goFull(); });
 $('moreGames').addEventListener('click', (e) => { if (location.protocol === 'file:') { e.preventDefault(); window.open('https://www.ionity.fun/', '_blank', 'noopener'); } });
 
 /* ---- options ---- */
@@ -1840,7 +2116,7 @@ function syncOptions() {
   const s = SAVE.settings;
   $('oDiff').textContent = DIFFS[s.diff]; $('oRounds').textContent = s.rounds === 1 ? '1 (sudden death)' : s.rounds; $('oTimer').textContent = s.timer;
   $('oSfx').value = s.sfx; $('oMus').value = s.music; $('oShake').textContent = s.shake ? 'ON' : 'OFF'; $('oFlash').textContent = s.reduceFlash ? 'ON' : 'OFF';
-  $('oTouch').textContent = s.touch.toUpperCase(); $('hSound').textContent = s.muted ? 'SFX OFF' : 'SFX ON';
+  $('oTouch').textContent = s.touch.toUpperCase(); $('oFull').textContent = s.autoFull ? 'ON' : 'OFF'; $('oVoice').textContent = s.voice ? 'ON' : 'OFF'; $('oCam').textContent = s.cam ? 'ON' : 'OFF'; $('hSound').textContent = s.muted ? 'SFX OFF' : 'SFX ON';
   if ($('diffName')) $('diffName').textContent = DIFFS[s.diff];
 }
 $('oDiff').onclick = () => { SAVE.settings.diff = (SAVE.settings.diff + 1) % 3; persist(); syncOptions(); };
@@ -1848,6 +2124,9 @@ $('oRounds').onclick = () => { SAVE.settings.rounds = SAVE.settings.rounds % 3 +
 $('oTimer').onclick = () => { const t = [60, 99, 150]; SAVE.settings.timer = t[(t.indexOf(SAVE.settings.timer) + 1) % 3]; persist(); syncOptions(); };
 $('oSfx').oninput = (e) => { SAVE.settings.sfx = +e.target.value; persist(); audio.applyVolumes(); };
 $('oMus').oninput = (e) => { SAVE.settings.music = +e.target.value; persist(); audio.applyVolumes(); };
+$('oFull').onclick = () => { SAVE.settings.autoFull = !SAVE.settings.autoFull; persist(); syncOptions(); if (SAVE.settings.autoFull) autoFull(); };
+$('oVoice').onclick = () => { SAVE.settings.voice = !SAVE.settings.voice; persist(); syncOptions(); announce('announcer online'); };
+$('oCam').onclick = () => { SAVE.settings.cam = !SAVE.settings.cam; persist(); syncOptions(); };
 $('oShake').onclick = () => { SAVE.settings.shake = !SAVE.settings.shake; persist(); syncOptions(); };
 $('oFlash').onclick = () => { SAVE.settings.reduceFlash = !SAVE.settings.reduceFlash; persist(); syncOptions(); };
 $('oTouch').onclick = () => { const m = ['auto', 'on', 'off']; SAVE.settings.touch = m[(m.indexOf(SAVE.settings.touch) + 1) % 3]; persist(); syncOptions(); UI.updateTouch(); };
@@ -1867,6 +2146,18 @@ window.addEventListener('resize', resize); document.addEventListener('fullscreen
 // tap the canvas on result-less states to skip banners / resume
 cv.addEventListener('pointerdown', () => audio.init());
 
+/* ---- floating toolbar: fades during fights, returns on mouse move / menus ---- */
+let toolT = 0;
+function poke() { toolT = performance.now(); }
+['pointermove', 'pointerdown'].forEach(ev => window.addEventListener(ev, poke, { passive: true }));
+setInterval(() => {
+  const fighting = UI.fighting() && !GAME.paused && UI.cur === null;
+  $('tools').classList.toggle('dim', fighting && performance.now() - toolT > 2500);
+  $('brandTag').classList.toggle('dim', !!fighting);
+  $('hFull').textContent = document.fullscreenElement ? '⛶ Exit' : '⛶ Full';
+}, 300);
+if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {})); }
+
 /* ---- boot ---- */
 // audio track starts as soon as the context exists
 const _init = audio.init.bind(audio);
@@ -1876,7 +2167,7 @@ if (QS.get('splash') === '0') UI.toTitle(); else UI.splashT = setTimeout(() => U
 GAME.state = 'menu'; audio.playMusic('menu');
 requestAnimationFrame((t) => { lastT = t; requestAnimationFrame(frame); });
 // test hook
-window.IOC = { GAME, UI, FIGHTERS, MOVES, PADS, SAVE, VERSION, get projectiles() { return projectiles; } };
+window.IOC = { GAME, UI, FIGHTERS, MOVES, PADS, SAVE, VERSION, get projectiles() { return projectiles; }, get hazards() { return hazards; } };
 </script>
 </body>
 </html>

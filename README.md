@@ -2,7 +2,7 @@
 
 > An original 2D arcade fighter in a single HTML file. Pick an avatar, win two rounds, then **TERMINATE** your rival before the clock runs out.
 
-**Document ID:** GME-2026-10-011 · **Version:** 1.0.0 · **Classification:** PUBLIC (source published for reference)
+**Document ID:** GME-2026-10-011 · **Version:** 1.1.0 · **Classification:** PUBLIC (source published for reference)
 **Author:** Johan Wilhelm van Antwerp · Ionity (Pty) Ltd · AEDI (Antwerp Ecosystems Designs Ionity) · ORCID [0009-0005-7181-0347](https://orcid.org/0009-0005-7181-0347)
 **Governance:** Policy 986 AED · **License:** AED 900 · CC BY-NC-SA 4.0 where stated
 **Play:** https://www.ionity.fun/combat/ · **Web:** https://www.ionity.today · https://www.ionity.world · Ref: https://www.ionity.co.za · Contact: ai@ionity.today
@@ -11,6 +11,47 @@
 ![IO-COMBAT](banner_og_1200x630.png)
 
 ---
+
+## v1.1.0 — "FULL SCREEN & SIGNATURES": what's new
+
+**Fullscreen-first.** The game now fills the whole browser window, letterboxed to 16:9, with no page header or footer.
+- **Real fullscreen** turns on automatically with your first tap or key (splash, menu or ENGAGE). Fullscreen also locks landscape on phones that allow it.
+- **Toggles:** the floating **⛶ Full** button top-right, or **double-click** the arena. **Options → Auto fullscreen** turns the automatic switch off.
+- **Toolbar:** Menu · Moves · Options · Sound · Full floats over the arena and **fades out during fights**. It comes back when you move the mouse.
+- **Installable app (PWA):** a manifest with `display: fullscreen`, landscape orientation, icons and a service worker for offline play. *Add to Home Screen* launches it fullscreen like a native game.
+
+**Signature moves** (`S`+`R` / `▼`+BLAST, 25 ION), one per fighter:
+
+| Fighter | Signature | What it does |
+|---|---|---|
+| IO-MAN | **AXE CYCLONE** | rising spin with an invulnerable start; a true anti-air that launches |
+| VOLTA | **THUNDER DROP** | leaps over the rival and dives: overhead on the way down, low shockwave on landing |
+| CRYO-CORE | **GLACIER WALL** | ice wall that destroys 3 enemy projectiles and freezes anyone who touches it |
+| NULL | **VOID SWAP** | swaps sides with the rival and leaves them disoriented |
+| MYCELIA | **SPORE TRAP** | hidden mine that launches and poisons; one at a time |
+| BLAZE-443 | **FLAME PILLAR** | marks the rival's spot and erupts half a second later |
+| THE AUDITOR | **ASSET SEIZURE** | long-range command grab that steals up to 35 ION |
+
+**New defence and comeback mechanics**
+- **PERFECT GUARD:** tap block within 6 frames of a hit. You take no damage and gain +15 ION, and a melee attacker is staggered so you can punish.
+- **ION BREAKER:** block + kick while being hit (50 ION). Invulnerable burst that knocks the rival away and resets their combo.
+- **OVERCLOCK:** below 25% health your hits deal +12% damage, with a red aura and HUD tag.
+
+**New mode: SURVIVAL.**
+- One round per challenger, against endless random rivals. THE AUDITOR shows up every 6th fight once you reach 5 wins.
+- Your health carries over, plus 25 per win. The CPU gets harder every 4 wins.
+- Your best run is saved on the device.
+
+**Presentation**
+- **Dynamic camera:** zooms in up to 1.18× as the fighters close in, and harder on SURGE and finishers. It can be turned off in Options.
+- **Announcer voice:** the browser's built-in speech says "Round 1", "Engage", "Terminate", "Deleted" and "… wins". It can be turned off in Options.
+- **Impact effects:** shockwave rings on heavy hits, surges, breakers and parries.
+- **Alternate colours:** `G` (P1) / `K` (P2) or the 🎨 button on the select screen. In a **mirror match**, P2 switches to the alternate colours automatically.
+- **Rival banter:** each rival's taunt shows on the ladder screen, and the winner's quote on the results screen.
+
+**AI.** The CPU now uses every signature move in context: anti-air cyclones, walls against zoners, swaps out of the corner and seizures against blockers. It also uses the ION BREAKER when caught in long combos, and on IRON it naturally perfect-guards.
+
+**Fixes.** An attack that was parried could crash the update loop. The attacker's state is now guarded.
 
 ## Play
 
@@ -31,6 +72,11 @@ On phones, play in **landscape**. Portrait shows a rotate screen and pauses the 
 | Element projectile (30 ION) | `R` | `U` / Num4 | B | BLAST |
 | Blink strike: teleport behind (40 ION) | `T` | `I` / Num5 | LB | BLINK |
 | **ION SURGE** super beam (100 ION) | `Y` | `O` / Num6 | LT | SURGE |
+| **Signature move** (25 ION) | `S`+`R` | `▼`+`U` | down + B | ▼ + BLAST |
+| **Perfect Guard** | tap `H` just before a hit | tap `L` | tap RB | tap BLOCK |
+| **ION Breaker** (50 ION, while hit) | `H`+`G` | `L`+`K` | RB + Y | BLOCK + KICK |
+| Alt colours (select screen) | `G` | `K` | | 🎨 |
+| Fullscreen | ⛶ button / double-click | | | ⛶ |
 | Pause · mute · music | `P`/`Esc` · `M` · `N` | | Start | II |
 | Training dummy mode | `Tab` | | | |
 
@@ -81,6 +127,7 @@ The stats feed the formulas directly: damage scales with power ÷ defence, and w
 
 ## Modes
 
+- **Survival:** endless one-round fights. Health carries over (+25 per win), and the best run is saved.
 - **Arcade Ladder:** five random rivals, then THE AUDITOR in the ROOT CAVERN. The CPU gets one step harder for the last two fights. A loss offers CONTINUE without losing ladder progress, and clearing the ladder unlocks the boss.
 - **Versus AI:** you choose the rival, arena and CPU level: EASY / NORMAL / IRON.
 - **2P Local:** two players on one keyboard, or two gamepads.
@@ -134,9 +181,18 @@ IO-COMBAT started from a generic HTML5 fighting-game prototype. It was rebuilt a
 
 ## Build & verify
 
-The game is a single file (~1,880 lines, ~150 KB) of vanilla JS and canvas, with no frameworks. `src/` holds the readable parts, and `build.py` assembles `index.html`, inlining the IONITY logo from `assets/logo/IONITY_logo_vector.svg`.
+The game is a single file (~2,170 lines, ~180 KB) of vanilla JS and canvas, with no frameworks. `src/` holds the readable parts, and `build.py` assembles `index.html`, inlining the IONITY logo from `assets/logo/IONITY_logo_vector.svg`.
 
-v1.0.0 was verified headless in Chromium with Playwright (`tests/t10.js`). **43 of 43 checks pass, twice in a row, with zero console errors.** The checks cover:
+v1.1.0 was verified headless in Chromium with Playwright. **`tests/t11.js` (26 checks) passed 3 runs in a row and the regression suite `tests/t10.js` (43 checks) passed twice, all with zero console errors.** The v1.1 checks cover:
+- **Fullscreen layout:** the canvas fills a 1600×900 viewport, letterboxes on a tall window and fills a Pixel 7 screen; the manifest is linked and the toolbar fades in fights.
+- **Signatures:** all 7 land or take effect.
+- **Mechanics:** PERFECT GUARD staggers, ION BREAKER pushes away, and OVERCLOCK triggers and adds damage.
+- **Camera:** it zooms in at close range.
+- **Colours:** G toggles them, and a mirror match gives P2 the alternate set.
+- **Survival:** one-round fights, KO → TERMINATE → NEXT CHALLENGER, health carry-over (+25) and the saved best run.
+- **AI:** in a CPU-vs-CPU soak, the CPU uses its signature moves.
+
+The v1.0 regression suite (`tests/t10.js`) covers:
 - **Screens:** splash, title, attract demo, select (keyboard and right-click), and the boss lock.
 - **Timing:** the round intro and the fixed-step timer.
 - **Moves:** punch, UPLINK launch, standing block, sweep beating a standing block, grab beating a block, projectile spawn and hit, blink behind, and SURGE damage.
@@ -147,20 +203,24 @@ v1.0.0 was verified headless in Chromium with Playwright (`tests/t10.js`). **43 
 - **Phones:** the Pixel 7 landscape touch deck (a PUNCH tap lands) and the Pixel 7 portrait rotate prompt.
 
 ```
-sha256  index.html / IONITY_IO-COMBAT.html   e1d94291cd3496618a96d32c5fb6caa643a765ee32df96e21b22045b32ae2788   v1.0.0
+sha256  index.html / IONITY_IO-COMBAT.html   b3f502d4547712a322d0680cf1c1d509c11eb048a4b46e09742911ad50d2fc24   v1.1.0
+sha256  (v1.0.0)                              e1d94291cd3496618a96d32c5fb6caa643a765ee32df96e21b22045b32ae2788
 ```
 
 ## Repository layout
 
 ```
-index.html                 v1.0.0, also served at ionity.fun/combat/
-IONITY_IO-COMBAT.html      v1.0.0 (same file, descriptive name)
+index.html                 v1.1.0, also served at ionity.fun/combat/
+IONITY_IO-COMBAT.html      v1.1.0 (same file, descriptive name)
+manifest.webmanifest       PWA manifest (display: fullscreen, landscape)
+sw.js                      service worker (offline play, network-first)
+icon-192.png · icon-512.png  app icons
 banner_og_1200x630.png     social / OG banner
 src/                       readable source parts (head, body, core, fighter, world, game, ui)
 build.py                   assembles index.html from src/
 assets/logo/               official IONITY logo vector
 previews/                  headless screenshots
-tests/t10.js               v1.0 verification suite (Playwright + Chromium)
+tests/t10.js · t11.js      v1.0 regression + v1.1 feature suites (Playwright + Chromium)
 README.md · LICENSE
 ```
 

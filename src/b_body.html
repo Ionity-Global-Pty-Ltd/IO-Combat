@@ -1,20 +1,14 @@
 <body>
-<header class="bar">
-  <div class="brand">
-    <svg viewBox="0 0 2759 760" aria-label="IONITY">{{LOGO_PATH}}</svg>
-    <div><div class="t">IO-COMBAT</div><div class="s">Ionity Grid Tournament</div></div>
-  </div>
-  <div class="btns">
-    <button class="btn" id="hMenu">Menu</button>
-    <button class="btn" id="hMoves">Moves</button>
-    <button class="btn" id="hOptions">Options</button>
-    <button class="btn" id="hSound">SFX ON</button>
-    <button class="btn" id="hFull">[ ] Full</button>
-  </div>
-</header>
-
 <main id="stage">
   <canvas id="cv" width="1280" height="720"></canvas>
+  <div id="brandTag"><svg viewBox="0 0 2759 760" aria-label="IONITY">{{LOGO_PATH}}</svg><b>IO-COMBAT</b></div>
+  <div id="tools">
+    <button class="btn" id="hMenu" title="Menu">☰ Menu</button>
+    <button class="btn" id="hMoves" title="Move list">? Moves</button>
+    <button class="btn" id="hOptions" title="Options">⚙</button>
+    <button class="btn" id="hSound" title="Sound">SFX ON</button>
+    <button class="btn gold" id="hFull" title="Fullscreen">⛶ Full</button>
+  </div>
 
   <!-- SPLASH -->
   <div id="splash" class="ov">
@@ -31,15 +25,27 @@
     <div class="sub">Grid Tournament · Original Arcade Fighter</div>
     <div class="menu" id="menu">
       <button class="btn big gold" data-mode="arcade">Arcade Ladder</button>
+      <button class="btn big red" data-mode="survival">Survival</button>
       <button class="btn big" data-mode="ai">Versus AI</button>
       <button class="btn big" data-mode="2p">2P Local</button>
       <button class="btn big" data-mode="training">Training</button>
       <button class="btn" data-act="moves">Move List</button>
       <button class="btn" data-act="options">Options</button>
-      <a class="btn wide" style="text-align:center" href="../" id="moreGames">◀ Play IO-MAN · Get Over It Door</a>
+      <a class="btn" style="text-align:center;display:flex;align-items:center;justify-content:center" href="../" id="moreGames">◀ Play IO-MAN</a>
     </div>
     <div class="stats" id="titleStats"></div>
-    <div class="hint">Keyboard: W/S + F to pick · Enter to start · Gamepad and touch supported</div>
+    <div class="hint">Keyboard: W/S + F to pick · Enter to start · Gamepad and touch supported · ⛶ fullscreen top-right</div>
+    <div class="foot">
+  <div class="links">
+    <a href="https://www.ionity.fun" target="_blank" rel="noopener">ionity.fun</a>
+    <a href="https://www.ionity.today" target="_blank" rel="noopener">ionity.today</a>
+    <a href="https://www.ionity.world" target="_blank" rel="noopener">ionity.world</a>
+    <a href="https://www.ionity.co.za" target="_blank" rel="noopener">ionity.co.za</a>
+    <a href="https://github.com/Ionity-Global-Pty-Ltd/IO-Combat" target="_blank" rel="noopener">GitHub · IO-Combat</a>
+    <a href="mailto:ai@ionity.today">ai@ionity.today</a>
+  </div>
+  <div class="legal">© 2018–2026 Antwerp Designs | Ionity (Pty) Ltd · AEDI · Policy 986 AED · AED 900 · All characters, arenas, music and sounds are original. · <b>BUILDING TOMORROW, TODAY.</b></div>
+</div>
   </div>
 
   <!-- SELECT -->
@@ -55,6 +61,7 @@
     <div class="row">
       <div class="pick" id="arenaPick"><button data-d="-1">◀</button><span>ARENA</span><b id="arenaName">SERVER CORE</b><button data-d="1">▶</button></div>
       <div class="pick" id="diffPick"><button data-d="-1">◀</button><span>CPU</span><b id="diffName">NORMAL</b><button data-d="1">▶</button></div>
+      <button class="btn" id="selAlt" title="P1 colour (G) · P2 colour (K)">🎨 Colours</button>
       <button class="btn" id="selBack">Back</button>
       <button class="btn big gold" id="selGo">ENGAGE ▶</button>
     </div>
@@ -94,13 +101,17 @@
           <li><kbd>H</kbd> hold block · <kbd>S</kbd>+<kbd>H</kbd> low block</li>
           <li><kbd>H</kbd>+<kbd>F</kbd> up close: <b>DATA GRAB</b> (unblockable)</li>
           <li><kbd>R</kbd> projectile (30 ION) · <kbd>T</kbd> blink strike (40)</li>
+          <li><kbd>S</kbd>+<kbd>R</kbd> <b>SIGNATURE</b> move (25 ION, unique per fighter)</li>
           <li><kbd>Y</kbd> <b>ION SURGE</b> super (100 ION)</li>
+          <li>Tap <kbd>H</kbd> just before a hit = <b>PERFECT GUARD</b></li>
+          <li><kbd>H</kbd>+<kbd>G</kbd> while being hit = <b>ION BREAKER</b> (50 ION)</li>
         </ul></div>
         <div class="box"><h4>Player 2 · Keyboard (2P)</h4><ul>
           <li><kbd>◀</kbd>/<kbd>▶</kbd> move · double-tap to dash</li>
           <li><kbd>▲</kbd> jump · <kbd>▼</kbd> crouch</li>
           <li><kbd>J</kbd> punch · <kbd>K</kbd> kick · <kbd>L</kbd> block</li>
-          <li><kbd>U</kbd> projectile · <kbd>I</kbd> blink · <kbd>O</kbd> surge</li>
+          <li><kbd>U</kbd> projectile · <kbd>▼</kbd>+<kbd>U</kbd> signature · <kbd>I</kbd> blink · <kbd>O</kbd> surge</li>
+          <li><kbd>L</kbd>+<kbd>K</kbd> while being hit = ION BREAKER</li>
           <li>Numpad works too: <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd></li>
           <li><b>Gamepad:</b> X punch · Y kick · RB/RT block · B projectile · LB blink · LT surge · A jump · Start pause</li>
           <li><kbd>P</kbd>/<kbd>Esc</kbd> pause · <kbd>M</kbd> mute · <kbd>N</kbd> music</li>
@@ -113,6 +124,13 @@
         Elements: <span style="color:#00c6ff">ION</span> knockback · <span style="color:#facc15">VOLT</span> stun ·
         <span style="color:#7dd3fc">CRYO</span> freeze · <span style="color:#a855f7">VOID</span> drains ION ·
         <span style="color:#4ade80">SPORE</span> poison · <span style="color:#f97316">FIRE</span> burn.
+        Below 25% health you <b style="color:#ff3b5c">OVERCLOCK</b> (+12% damage).
+      </div>
+      <div class="box" style="margin-top:12px"><h4>Signature moves (▼ + BLAST)</h4>
+        <b style="color:#00c6ff">IO-MAN</b> Axe Cyclone (rising anti-air) · <b style="color:#facc15">VOLTA</b> Thunder Drop (dive + shockwave) ·
+        <b style="color:#7dd3fc">CRYO-CORE</b> Glacier Wall (stops projectiles) · <b style="color:#a855f7">NULL</b> Void Swap (switch sides) ·
+        <b style="color:#4ade80">MYCELIA</b> Spore Trap (hidden mine) · <b style="color:#f97316">BLAZE-443</b> Flame Pillar (erupts under rival) ·
+        <b style="color:#ffd166">THE AUDITOR</b> Asset Seizure (command grab, steals ION)
       </div>
     </div>
   </div>
@@ -128,6 +146,9 @@
       <div class="opt"><span>Music volume</span><input type="range" id="oMus" min="0" max="100"></div>
       <div class="opt"><span>Screen shake</span><button class="btn" id="oShake">ON</button></div>
       <div class="opt"><span>Reduced flashing</span><button class="btn" id="oFlash">OFF</button></div>
+      <div class="opt"><span>Auto fullscreen</span><button class="btn" id="oFull">ON</button></div>
+      <div class="opt"><span>Announcer voice</span><button class="btn" id="oVoice">ON</button></div>
+      <div class="opt"><span>Dynamic camera</span><button class="btn" id="oCam">ON</button></div>
       <div class="opt"><span>Touch controls</span><button class="btn" id="oTouch">AUTO</button></div>
       <div class="opt" style="border:0"><span>Reset stats &amp; unlocks</span><button class="btn red" id="oReset">RESET</button></div>
     </div>
@@ -150,14 +171,3 @@
     <div class="sub">IO-COMBAT plays sideways</div><button class="btn" id="rotFull" style="margin-top:14px">⟳ Fullscreen + Landscape</button></div>
 </main>
 
-<footer class="bar">
-  <div class="links">
-    <a href="https://www.ionity.fun" target="_blank" rel="noopener">ionity.fun</a>
-    <a href="https://www.ionity.today" target="_blank" rel="noopener">ionity.today</a>
-    <a href="https://www.ionity.world" target="_blank" rel="noopener">ionity.world</a>
-    <a href="https://www.ionity.co.za" target="_blank" rel="noopener">ionity.co.za</a>
-    <a href="https://github.com/Ionity-Global-Pty-Ltd/IO-Combat" target="_blank" rel="noopener">GitHub · IO-Combat</a>
-    <a href="mailto:ai@ionity.today">ai@ionity.today</a>
-  </div>
-  <div class="legal">© 2018–2026 Antwerp Designs | Ionity (Pty) Ltd · AEDI · Policy 986 AED · AED 900 · All characters, arenas, music and sounds are original. · <b>BUILDING TOMORROW, TODAY.</b></div>
-</footer>

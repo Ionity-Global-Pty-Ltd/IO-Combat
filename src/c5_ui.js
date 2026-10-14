@@ -74,12 +74,15 @@ const UI = {
     GAME.mode = mode; GAME.state = 'select'; this.show('select'); audio.sfx('confirm');
     if (FIGHTERS[GAME.sel[0]].boss && !SAVE.unlocked.auditor) GAME.sel[0] = 0;
     if (GAME.sel[1] === GAME.sel[0] && mode !== '2p') GAME.sel[1] = (GAME.sel[0] + 1) % 6;
-    $('selSub').textContent = mode === 'arcade' ? 'ARCADE: pick your avatar (A/D/W/S or click) · six rivals and a boss await'
+    autoFull();
+    const solo = mode === 'arcade' || mode === 'survival';
+    $('selSub').textContent = mode === 'survival' ? 'SURVIVAL: one round per rival, health carries over (+25 per win) · how long can you last?'
+      : mode === 'arcade' ? 'ARCADE: pick your avatar (A/D/W/S or click) · six rivals and a boss await'
       : mode === '2p' ? 'P1: A/D/W/S + F · P2: arrows + J · Click = P1 · Right-click / Shift-click = P2'
       : 'Pick yours (A/D or click) · rival with arrows or right-click / Shift-click';
-    $('arenaPick').classList.toggle('hidden', mode === 'arcade');
+    $('arenaPick').classList.toggle('hidden', solo);
     $('diffPick').classList.toggle('hidden', mode === '2p' || mode === 'training');
-    $('p2info').parentElement.querySelector('.vs').classList.toggle('hidden', mode === 'arcade');
+    $('p2info').parentElement.querySelector('.vs').classList.toggle('hidden', solo);
     this.buildGrid(); this.refreshSelect();
   },
   buildGrid() {
@@ -96,21 +99,21 @@ const UI = {
     });
   },
   pick(p, i) {
-    if (p === 1 && GAME.mode === 'arcade') p = 0;
+    if (p === 1 && (GAME.mode === 'arcade' || GAME.mode === 'survival')) p = 0;
     GAME.sel[p] = i; audio.sfx('select'); this.refreshSelect();
   },
   refreshSelect() {
     document.querySelectorAll('#grid .card').forEach(card => {
-      const i = +card.dataset.i, a = GAME.sel[0] === i, b = GAME.sel[1] === i && GAME.mode !== 'arcade';
+      const i = +card.dataset.i, solo = GAME.mode === 'arcade' || GAME.mode === 'survival', a = GAME.sel[0] === i, b = GAME.sel[1] === i && !solo;
       card.classList.toggle('p1', a); card.classList.toggle('p2', b);
       card.querySelector('.tags').innerHTML = (a ? '<span class="tag p1">P1</span>' : '') + (b ? `<span class="tag p2">${GAME.mode === '2p' ? 'P2' : 'CPU'}</span>` : '');
-      drawPortrait(card.querySelector('canvas'), FIGHTERS[i], a || b);
+      drawPortrait(card.querySelector('canvas'), FIGHTERS[i], a || b, a ? GAME.alt[0] : b ? GAME.alt[1] : false);
     });
     const info = (f, who) => `<div class="n" style="color:${f.c1}">${who} · ${f.name}</div><div>${f.title}</div><div style="font-style:italic;margin:2px 0 4px">“${f.quote}”</div>
       <div class="stat">POWER <i style="width:${(f.stats.power - 60) * 2.5}px"></i></div><div class="stat">SPEED <i style="width:${(f.stats.speed - 60) * 2.5}px"></i></div><div class="stat">DEFENCE <i style="width:${(f.stats.defense - 60) * 2.5}px"></i></div>
-      <div style="margin-top:3px">BLAST: <b style="color:#ffd166">${f.proj}</b> · BLINK: <b style="color:#00c6ff">${f.tele}</b> · SURGE: <b style="color:#ff3b5c">${f.surge}</b></div>`;
+      <div style="margin-top:3px">BLAST: <b style="color:#ffd166">${f.proj}</b> · SIG: <b style="color:#4ade80">${f.sig.name}</b> · BLINK: <b style="color:#00c6ff">${f.tele}</b> · SURGE: <b style="color:#ff3b5c">${f.surge}</b></div>`;
     $('p1info').innerHTML = info(FIGHTERS[GAME.sel[0]], 'P1');
-    $('p2info').innerHTML = GAME.mode === 'arcade' ? '<div class="n">6 RIVALS + BOSS</div><div>Win every fight. The Auditor waits in the Root Cavern.</div>' : info(FIGHTERS[GAME.sel[1]], GAME.mode === '2p' ? 'P2' : 'CPU');
+    $('p2info').innerHTML = GAME.mode === 'survival' ? `<div class="n">ENDLESS CHALLENGERS</div><div>Best run on this device: <b style="color:#ffd166">${SAVE.stats.survivalBest}</b> wins.</div>` : GAME.mode === 'arcade' ? '<div class="n">6 RIVALS + BOSS</div><div>Win every fight. The Auditor waits in the Root Cavern.</div>' : info(FIGHTERS[GAME.sel[1]], GAME.mode === '2p' ? 'P2' : 'CPU');
     $('arenaName').textContent = ARENAS[GAME.arenaIdx].name; $('diffName').textContent = DIFFS[SAVE.settings.diff];
   },
   moveSel(p, dx, dy) {
@@ -127,13 +130,22 @@ const UI = {
       GAME.ladder = FIGHTERS[me].boss ? pool.slice(0, 6) : [...pool.slice(0, 5), 6]; GAME.ladderIdx = 0;
       return this.openLadder();
     }
+    autoFull();
+    if (GAME.mode === 'survival') { GAME.survival = null; this.survivalRival(); this.show(null); return GAME.newMatch(); }
     GAME.arena = ARENAS[GAME.arenaIdx];
     this.show(null); GAME.newMatch();
+  },
+  survivalRival() {
+    const wins = GAME.survival ? GAME.survival.wins : 0;
+    const pool = FIGHTERS.map((f, i) => i).filter(i => i !== GAME.sel[0] && (!FIGHTERS[i].boss || wins >= 5));
+    GAME.sel[1] = (wins > 0 && wins % 6 === 5 && GAME.sel[0] !== 6) ? 6 : pool[(Math.random() * pool.length) | 0];
+    GAME.alt[1] = chance(0.3);
+    GAME.arena = FIGHTERS[GAME.sel[1]].boss ? ARENAS[4] : ARENAS[(Math.random() * 4) | 0];
   },
   openLadder() {
     this.show('ladder'); GAME.state = 'select';
     const n = GAME.ladder.length, i = GAME.ladderIdx, opp = FIGHTERS[GAME.ladder[i]];
-    $('ladSub').textContent = `FIGHT ${i + 1} / ${n} · ${opp.name} · ${opp.title}`;
+    $('ladSub').innerHTML = `FIGHT ${i + 1} / ${n} · ${opp.name} · ${opp.title}<br><i style="color:${opp.c1};letter-spacing:1px;text-transform:none;font-size:15px">${opp.name}: “${opp.taunt}”</i>`;
     const c = $('ladCv').getContext('2d'); c.clearRect(0, 0, 960, 300);
     const sw = 960 / n;
     GAME.ladder.forEach((fi, k) => {
@@ -166,7 +178,12 @@ const UI = {
         SAVE.stats.arcadeClears++; SAVE.unlocked.auditor = true; persist(); primary = 'NEW ARCADE RUN'; act = 'newArcade';
       } else if (won) { sub = `Rival ${GAME.ladderIdx + 1} of ${GAME.ladder.length} deleted.`; primary = 'NEXT RIVAL ▶'; act = 'next'; }
       else { title = 'SYSTEM FAILURE'; sub = 'Continue? Your ladder progress is kept.'; primary = 'CONTINUE'; act = 'rematch'; }
+    } else if (GAME.mode === 'survival') {
+      const sv = GAME.survival || { wins: 0 };
+      if (won) { title = `${sv.wins} DOWN`; sub = `Health carried: ${Math.round(sv.hp)}% · next challenger incoming`; primary = 'NEXT CHALLENGER ▶'; act = 'survNext'; }
+      else { title = 'SURVIVAL OVER'; sub = `${sv.wins} wins · best ${SAVE.stats.survivalBest}`; primary = 'TRY AGAIN'; act = 'survRestart'; }
     } else if (human) sub = won ? 'You win. The Grid remembers.' : 'Defeated. Re-route and retry.';
+    sub += `<br><i style="color:${winner.d.c1};text-transform:none;letter-spacing:1px;font-size:15px">${winner.d.name}: “${winner.d.win}”</i>`;
     const el = $('result');
     el.innerHTML = `<h2 class="h1" style="font-size:clamp(28px,5vw,60px)">${title}</h2><div class="sub">${sub}</div>
       <div class="panel" style="max-width:560px;margin-top:14px"><div class="cols">
@@ -186,6 +203,8 @@ const UI = {
     const a = this.resultAct;
     if (a === 'next') { GAME.ladderIdx++; this.openLadder(); }
     else if (a === 'newArcade') this.openSelect('arcade');
+    else if (a === 'survNext') { this.survivalRival(); this.show(null); GAME.newMatch(); }
+    else if (a === 'survRestart') { GAME.survival = null; this.survivalRival(); this.show(null); GAME.newMatch(); }
     else { this.show(null); GAME.newMatch(); }
   },
   togglePause(force) {
@@ -218,6 +237,8 @@ const UI = {
       else if (c === 'ArrowLeft') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, -1, 0); else if (c === 'ArrowRight') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, 1, 0);
       else if (c === 'ArrowUp') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, 0, -1); else if (c === 'ArrowDown') this.moveSel(GAME.mode === 'arcade' ? 0 : 1, 0, 1);
       else if (c === 'Enter' || c === 'KeyF' || c === 'KeyJ') this.go();
+      else if (c === 'KeyG') { GAME.alt[0] = !GAME.alt[0]; audio.sfx('select'); this.refreshSelect(); }
+      else if (c === 'KeyK' && GAME.mode !== 'arcade' && GAME.mode !== 'survival') { GAME.alt[1] = !GAME.alt[1]; audio.sfx('select'); this.refreshSelect(); }
       else if (c === 'Escape') this.toTitle();
       return true;
     }
@@ -232,17 +253,17 @@ const UI = {
   },
   leaveSplash() {
     if (this.cur !== 'splash') return;
-    audio.init(); clearTimeout(this.splashT); this.toTitle();
+    audio.init(); autoFull(); clearTimeout(this.splashT); this.toTitle();
   }
 };
 // result overlay container
 (() => { const d = document.createElement('div'); d.id = 'result'; d.className = 'ov hidden'; $('stage').insertBefore(d, $('touch')); })();
 
-function drawPortrait(cnv, f, active) {
+function drawPortrait(cnv, f, active, alt = false) {
   const c = cnv.getContext('2d'); c.clearRect(0, 0, cnv.width, cnv.height);
   const g = c.createRadialGradient(110, 140, 10, 110, 140, 130); g.addColorStop(0, f.glow + '55'); g.addColorStop(1, 'rgba(0,0,0,0)');
   c.fillStyle = g; c.fillRect(0, 0, cnv.width, cnv.height);
-  const tmp = new Fighter(1, f, 0, 1, null); tmp.state = active ? 'victory' : 'idle'; tmp.t = 2; tmp.meter = 0; tmp.pose = tmp.targetPose();
+  const tmp = new Fighter(1, f, 0, 1, null, alt); tmp.state = active ? 'victory' : 'idle'; tmp.t = 2; tmp.meter = 0; tmp.pose = tmp.targetPose();
   c.save(); c.translate(110, 224); c.scale(0.92, 0.92); tmp.renderBody(c, 0, 0, 1, tmp.pose, {}); c.restore();
 }
 function share(text) {
@@ -261,6 +282,7 @@ document.querySelector('#menu [data-act="moves"]').addEventListener('click', () 
 document.querySelector('#menu [data-act="options"]').addEventListener('click', () => UI.modal('options'));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { b.closest('.ov').classList.add('hidden'); if (UI.fighting() && UI.cur === null) GAME.paused = false; UI.updateTouch(); }));
 $('selBack').onclick = () => UI.toTitle();
+$('selAlt').onclick = (e) => { const p = e.shiftKey && GAME.mode !== 'arcade' && GAME.mode !== 'survival' ? 1 : 0; GAME.alt[p] = !GAME.alt[p]; audio.sfx('select'); UI.refreshSelect(); };
 $('selGo').onclick = () => UI.go();
 $('arenaPick').querySelectorAll('button').forEach(b => b.onclick = () => { GAME.arenaIdx = (GAME.arenaIdx + +b.dataset.d + ARENAS.length) % ARENAS.length; audio.sfx('select'); UI.refreshSelect(); });
 $('diffPick').querySelectorAll('button').forEach(b => b.onclick = () => { SAVE.settings.diff = (SAVE.settings.diff + +b.dataset.d + 3) % 3; persist(); syncOptions(); UI.refreshSelect(); });
@@ -275,12 +297,18 @@ $('hMenu').onclick = () => UI.toTitle();
 $('hMoves').onclick = () => { if (UI.fighting() && !GAME.paused) UI.togglePause(true); UI.modal('moves'); };
 $('hOptions').onclick = () => { if (UI.fighting() && !GAME.paused) UI.togglePause(true); UI.modal('options'); };
 $('hSound').onclick = () => { audio.init(); toggleMute(); };
+function autoFull() {
+  if (!SAVE.settings.autoFull || document.fullscreenElement || !document.fullscreenEnabled || QS.get('full') === '0') return;
+  const st = document.documentElement;
+  try { const p = st.requestFullscreen({ navigationUI: 'hide' }); if (p && p.then) p.then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); }).catch(() => {}); } catch (e) { /* not allowed here */ }
+}
 function goFull() {
-  const st = $('stage');
+  const st = document.documentElement;
   const p = document.fullscreenElement ? document.exitFullscreen() : (st.requestFullscreen ? st.requestFullscreen() : Promise.reject());
   Promise.resolve(p).then(() => { if (screen.orientation && screen.orientation.lock && document.fullscreenElement) screen.orientation.lock('landscape').catch(() => {}); }).catch(() => {});
 }
 $('hFull').onclick = goFull; $('rotFull').onclick = goFull;
+document.addEventListener('dblclick', (e) => { if (e.target === cv) goFull(); });
 $('moreGames').addEventListener('click', (e) => { if (location.protocol === 'file:') { e.preventDefault(); window.open('https://www.ionity.fun/', '_blank', 'noopener'); } });
 
 /* ---- options ---- */
@@ -288,7 +316,7 @@ function syncOptions() {
   const s = SAVE.settings;
   $('oDiff').textContent = DIFFS[s.diff]; $('oRounds').textContent = s.rounds === 1 ? '1 (sudden death)' : s.rounds; $('oTimer').textContent = s.timer;
   $('oSfx').value = s.sfx; $('oMus').value = s.music; $('oShake').textContent = s.shake ? 'ON' : 'OFF'; $('oFlash').textContent = s.reduceFlash ? 'ON' : 'OFF';
-  $('oTouch').textContent = s.touch.toUpperCase(); $('hSound').textContent = s.muted ? 'SFX OFF' : 'SFX ON';
+  $('oTouch').textContent = s.touch.toUpperCase(); $('oFull').textContent = s.autoFull ? 'ON' : 'OFF'; $('oVoice').textContent = s.voice ? 'ON' : 'OFF'; $('oCam').textContent = s.cam ? 'ON' : 'OFF'; $('hSound').textContent = s.muted ? 'SFX OFF' : 'SFX ON';
   if ($('diffName')) $('diffName').textContent = DIFFS[s.diff];
 }
 $('oDiff').onclick = () => { SAVE.settings.diff = (SAVE.settings.diff + 1) % 3; persist(); syncOptions(); };
@@ -296,6 +324,9 @@ $('oRounds').onclick = () => { SAVE.settings.rounds = SAVE.settings.rounds % 3 +
 $('oTimer').onclick = () => { const t = [60, 99, 150]; SAVE.settings.timer = t[(t.indexOf(SAVE.settings.timer) + 1) % 3]; persist(); syncOptions(); };
 $('oSfx').oninput = (e) => { SAVE.settings.sfx = +e.target.value; persist(); audio.applyVolumes(); };
 $('oMus').oninput = (e) => { SAVE.settings.music = +e.target.value; persist(); audio.applyVolumes(); };
+$('oFull').onclick = () => { SAVE.settings.autoFull = !SAVE.settings.autoFull; persist(); syncOptions(); if (SAVE.settings.autoFull) autoFull(); };
+$('oVoice').onclick = () => { SAVE.settings.voice = !SAVE.settings.voice; persist(); syncOptions(); announce('announcer online'); };
+$('oCam').onclick = () => { SAVE.settings.cam = !SAVE.settings.cam; persist(); syncOptions(); };
 $('oShake').onclick = () => { SAVE.settings.shake = !SAVE.settings.shake; persist(); syncOptions(); };
 $('oFlash').onclick = () => { SAVE.settings.reduceFlash = !SAVE.settings.reduceFlash; persist(); syncOptions(); };
 $('oTouch').onclick = () => { const m = ['auto', 'on', 'off']; SAVE.settings.touch = m[(m.indexOf(SAVE.settings.touch) + 1) % 3]; persist(); syncOptions(); UI.updateTouch(); };
@@ -315,6 +346,18 @@ window.addEventListener('resize', resize); document.addEventListener('fullscreen
 // tap the canvas on result-less states to skip banners / resume
 cv.addEventListener('pointerdown', () => audio.init());
 
+/* ---- floating toolbar: fades during fights, returns on mouse move / menus ---- */
+let toolT = 0;
+function poke() { toolT = performance.now(); }
+['pointermove', 'pointerdown'].forEach(ev => window.addEventListener(ev, poke, { passive: true }));
+setInterval(() => {
+  const fighting = UI.fighting() && !GAME.paused && UI.cur === null;
+  $('tools').classList.toggle('dim', fighting && performance.now() - toolT > 2500);
+  $('brandTag').classList.toggle('dim', !!fighting);
+  $('hFull').textContent = document.fullscreenElement ? '⛶ Exit' : '⛶ Full';
+}, 300);
+if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {})); }
+
 /* ---- boot ---- */
 // audio track starts as soon as the context exists
 const _init = audio.init.bind(audio);
@@ -324,7 +367,7 @@ if (QS.get('splash') === '0') UI.toTitle(); else UI.splashT = setTimeout(() => U
 GAME.state = 'menu'; audio.playMusic('menu');
 requestAnimationFrame((t) => { lastT = t; requestAnimationFrame(frame); });
 // test hook
-window.IOC = { GAME, UI, FIGHTERS, MOVES, PADS, SAVE, VERSION, get projectiles() { return projectiles; } };
+window.IOC = { GAME, UI, FIGHTERS, MOVES, PADS, SAVE, VERSION, get projectiles() { return projectiles; }, get hazards() { return hazards; } };
 </script>
 </body>
 </html>
