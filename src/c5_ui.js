@@ -9,6 +9,7 @@ function keyTarget(code) {
   return null;
 }
 window.addEventListener('keydown', (e) => {
+  if (e.target && e.target.tagName === 'INPUT') { if (e.code === 'Enter' && e.target.id === 'onName') $('onGo').click(); return; }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(e.code)) e.preventDefault();
   audio.init();
   if (UI.onKey(e)) return;
@@ -46,11 +47,11 @@ document.querySelectorAll('#touch .tb').forEach(el => {
 $('tPause').addEventListener('pointerdown', (e) => { e.preventDefault(); UI.togglePause(); });
 
 /* -------------------------------------------------------------------- UI */
-const OVERLAYS = ['splash', 'title', 'select', 'ladder', 'pause', 'moves', 'options', 'result'];
+const OVERLAYS = ['splash', 'title', 'select', 'ladder', 'pause', 'moves', 'options', 'result', 'online'];
 const UI = {
   cur: 'splash', diffSel: SAVE.settings.diff,
   show(id) {
-    ['splash', 'title', 'select', 'ladder', 'pause', 'result'].forEach(o => { const el = $(o); if (el) el.classList.toggle('hidden', o !== id); });
+    ['splash', 'title', 'select', 'ladder', 'pause', 'result', 'online'].forEach(o => { const el = $(o); if (el) el.classList.toggle('hidden', o !== id); });
     this.cur = id; this.updateTouch();
   },
   modal(id, open = true) { $(id).classList.toggle('hidden', !open); if (open && this.fighting()) GAME.paused = true; },
@@ -61,6 +62,7 @@ const UI = {
     $('touch').classList.toggle('hidden', !on); $('tPause').classList.toggle('hidden', !on);
   },
   toTitle() {
+    if (NET.running || NET.waiting || NET.pc) NET.leave();
     GAME.state = 'menu'; GAME.paused = false; GAME.p1 = GAME.p2 = null; GAME.banner = null; projectiles = []; particles = []; popups = [];
     this.show('title'); this.renderStats(); audio.playMusic('menu');
   },
@@ -75,13 +77,15 @@ const UI = {
     if (FIGHTERS[GAME.sel[0]].boss && !SAVE.unlocked.auditor) GAME.sel[0] = 0;
     if (GAME.sel[1] === GAME.sel[0] && mode !== '2p') GAME.sel[1] = (GAME.sel[0] + 1) % 6;
     autoFull();
-    const solo = mode === 'arcade' || mode === 'survival';
-    $('selSub').textContent = mode === 'survival' ? 'SURVIVAL: one round per rival, health carries over (+25 per win) · how long can you last?'
+    const solo = mode === 'arcade' || mode === 'survival' || mode === 'online';
+    $('selSub').textContent = mode === 'online' ? 'ONLINE PvP: pick your avatar and colours (G) · then FIND MATCH'
+      : mode === 'survival' ? 'SURVIVAL: one round per rival, health carries over (+25 per win) · how long can you last?'
       : mode === 'arcade' ? 'ARCADE: pick your avatar (A/D/W/S or click) · six rivals and a boss await'
       : mode === '2p' ? 'P1: A/D/W/S + F · P2: arrows + J · Click = P1 · Right-click / Shift-click = P2'
       : 'Pick yours (A/D or click) · rival with arrows or right-click / Shift-click';
     $('arenaPick').classList.toggle('hidden', solo);
-    $('diffPick').classList.toggle('hidden', mode === '2p' || mode === 'training');
+    $('diffPick').classList.toggle('hidden', mode === '2p' || mode === 'training' || mode === 'online');
+    $('selGo').textContent = mode === 'online' ? 'FIND MATCH ▶' : 'ENGAGE ▶';
     $('p2info').parentElement.querySelector('.vs').classList.toggle('hidden', solo);
     this.buildGrid(); this.refreshSelect();
   },
@@ -99,12 +103,12 @@ const UI = {
     });
   },
   pick(p, i) {
-    if (p === 1 && (GAME.mode === 'arcade' || GAME.mode === 'survival')) p = 0;
+    if (p === 1 && (GAME.mode === 'arcade' || GAME.mode === 'survival' || GAME.mode === 'online')) p = 0;
     GAME.sel[p] = i; audio.sfx('select'); this.refreshSelect();
   },
   refreshSelect() {
     document.querySelectorAll('#grid .card').forEach(card => {
-      const i = +card.dataset.i, solo = GAME.mode === 'arcade' || GAME.mode === 'survival', a = GAME.sel[0] === i, b = GAME.sel[1] === i && !solo;
+      const i = +card.dataset.i, solo = GAME.mode === 'arcade' || GAME.mode === 'survival' || GAME.mode === 'online', a = GAME.sel[0] === i, b = GAME.sel[1] === i && !solo;
       card.classList.toggle('p1', a); card.classList.toggle('p2', b);
       card.querySelector('.tags').innerHTML = (a ? '<span class="tag p1">P1</span>' : '') + (b ? `<span class="tag p2">${GAME.mode === '2p' ? 'P2' : 'CPU'}</span>` : '');
       drawPortrait(card.querySelector('canvas'), FIGHTERS[i], a || b, a ? GAME.alt[0] : b ? GAME.alt[1] : false);
@@ -113,7 +117,7 @@ const UI = {
       <div class="stat">POWER <i style="width:${(f.stats.power - 60) * 2.5}px"></i></div><div class="stat">SPEED <i style="width:${(f.stats.speed - 60) * 2.5}px"></i></div><div class="stat">DEFENCE <i style="width:${(f.stats.defense - 60) * 2.5}px"></i></div>
       <div style="margin-top:3px">BLAST: <b style="color:#ffd166">${f.proj}</b> · SIG: <b style="color:#4ade80">${f.sig.name}</b> · BLINK: <b style="color:#00c6ff">${f.tele}</b> · SURGE: <b style="color:#ff3b5c">${f.surge}</b></div>`;
     $('p1info').innerHTML = info(FIGHTERS[GAME.sel[0]], 'P1');
-    $('p2info').innerHTML = GAME.mode === 'survival' ? `<div class="n">ENDLESS CHALLENGERS</div><div>Best run on this device: <b style="color:#ffd166">${SAVE.stats.survivalBest}</b> wins.</div>` : GAME.mode === 'arcade' ? '<div class="n">6 RIVALS + BOSS</div><div>Win every fight. The Auditor waits in the Root Cavern.</div>' : info(FIGHTERS[GAME.sel[1]], GAME.mode === '2p' ? 'P2' : 'CPU');
+    $('p2info').innerHTML = GAME.mode === 'online' ? `<div class="n">ONLINE RIVAL</div><div>Matched from the IONITY CLOUD queue. Record on this device: <b style="color:#4ade80">${SAVE.stats.onlineWins}W</b> · <b style="color:#ff3b5c">${SAVE.stats.onlineLosses}L</b></div>` : GAME.mode === 'survival' ? `<div class="n">ENDLESS CHALLENGERS</div><div>Best run on this device: <b style="color:#ffd166">${SAVE.stats.survivalBest}</b> wins.</div>` : GAME.mode === 'arcade' ? '<div class="n">6 RIVALS + BOSS</div><div>Win every fight. The Auditor waits in the Root Cavern.</div>' : info(FIGHTERS[GAME.sel[1]], GAME.mode === '2p' ? 'P2' : 'CPU');
     $('arenaName').textContent = ARENAS[GAME.arenaIdx].name; $('diffName').textContent = DIFFS[SAVE.settings.diff];
   },
   moveSel(p, dx, dy) {
@@ -131,10 +135,32 @@ const UI = {
       return this.openLadder();
     }
     autoFull();
+    if (GAME.mode === 'online') return this.openOnline();
     if (GAME.mode === 'survival') { GAME.survival = null; this.survivalRival(); this.show(null); return GAME.newMatch(); }
     GAME.arena = ARENAS[GAME.arenaIdx];
     this.show(null); GAME.newMatch();
   },
+  openOnline() {
+    this.show('online'); GAME.state = 'select';
+    const f = FIGHTERS[GAME.sel[0]];
+    $('onPick').innerHTML = `Fighting as <b style="color:${GAME.alt[0] && f.alt ? f.alt.c1 : f.c1}">${f.name}</b> · ${f.title}`;
+    $('onName').value = SAVE.settings.name || ('IO-' + ((Math.random() * 900 + 100) | 0));
+    $('onGo').classList.remove('hidden'); $('onSpin').classList.remove('on');
+    NET.say('Ready. Press FIND MATCH to join the queue.', `Online record: ${SAVE.stats.onlineWins} wins · ${SAVE.stats.onlineLosses} losses`);
+  },
+  findMatch() {
+    const n = cleanName($('onName').value);
+    if (!n) { NET.say('<span style="color:#ff3b5c">Tag must be 1-9 letters, digits or - (and clean).</span>'); return; }
+    SAVE.settings.name = n; persist(); $('onName').value = n;
+    $('onGo').classList.add('hidden'); $('onSpin').classList.add('on');
+    NET.closing = false; NET.find(n, GAME.sel[0], GAME.alt[0]);
+  },
+  onlineLost(reason) {
+    GAME.state = 'menu'; GAME.p1 = GAME.p2 = null; projectiles = []; hazards = [];
+    this.show('online'); $('onGo').classList.remove('hidden'); $('onGo').textContent = 'FIND NEW MATCH'; $('onSpin').classList.remove('on');
+    NET.say(`<span style="color:#ffd166">${reason}</span>`, `Online record: ${SAVE.stats.onlineWins} wins · ${SAVE.stats.onlineLosses} losses`);
+  },
+  onlineNote(t) { popupDom(t); const b = $('rPrimary'); if (b && GAME.mode === 'online') b.textContent = 'ACCEPT REMATCH'; },
   survivalRival() {
     const wins = GAME.survival ? GAME.survival.wins : 0;
     const pool = FIGHTERS.map((f, i) => i).filter(i => i !== GAME.sel[0] && (!FIGHTERS[i].boss || wins >= 5));
@@ -178,6 +204,10 @@ const UI = {
         SAVE.stats.arcadeClears++; SAVE.unlocked.auditor = true; persist(); primary = 'NEW ARCADE RUN'; act = 'newArcade';
       } else if (won) { sub = `Rival ${GAME.ladderIdx + 1} of ${GAME.ladder.length} deleted.`; primary = 'NEXT RIVAL ▶'; act = 'next'; }
       else { title = 'SYSTEM FAILURE'; sub = 'Continue? Your ladder progress is kept.'; primary = 'CONTINUE'; act = 'rematch'; }
+    } else if (GAME.mode === 'online') {
+      const iWon = (won ? 0 : 1) === NET.me; title = iWon ? 'VICTORY' : 'DEFEAT';
+      sub = `${iWon ? 'You beat' : 'You lost to'} <b>${NET.names[1 - NET.me]}</b> · online record ${SAVE.stats.onlineWins}W ${SAVE.stats.onlineLosses}L`;
+      primary = NET.wantRematch[1 - NET.me] ? 'ACCEPT REMATCH' : 'REMATCH'; act = 'netRematch';
     } else if (GAME.mode === 'survival') {
       const sv = GAME.survival || { wins: 0 };
       if (won) { title = `${sv.wins} DOWN`; sub = `Health carried: ${Math.round(sv.hp)}% · next challenger incoming`; primary = 'NEXT CHALLENGER ▶'; act = 'survNext'; }
@@ -195,7 +225,7 @@ const UI = {
     this.show('result');
     this.resultAct = act;
     $('rPrimary').onclick = () => this.resultPrimary();
-    $('rSelect').onclick = () => this.openSelect(GAME.mode === 'arcade' ? 'arcade' : GAME.mode);
+    $('rSelect').onclick = () => { if (GAME.mode === 'online') { NET.leave(); } this.openSelect(GAME.mode === 'arcade' ? 'arcade' : GAME.mode); };
     $('rMenu').onclick = () => this.toTitle();
     $('rShare').onclick = () => share(won && human ? `I beat ${GAME.p2.d.name} with ${GAME.p1.d.name} in IO-COMBAT` : `${winner.d.name} won a match in IO-COMBAT`);
   },
@@ -203,12 +233,15 @@ const UI = {
     const a = this.resultAct;
     if (a === 'next') { GAME.ladderIdx++; this.openLadder(); }
     else if (a === 'newArcade') this.openSelect('arcade');
+    else if (a === 'netRematch') { NET.rematch(); const b = $('rPrimary'); if (b) { b.textContent = 'WAITING FOR RIVAL…'; b.disabled = true; } }
     else if (a === 'survNext') { this.survivalRival(); this.show(null); GAME.newMatch(); }
     else if (a === 'survRestart') { GAME.survival = null; this.survivalRival(); this.show(null); GAME.newMatch(); }
     else { this.show(null); GAME.newMatch(); }
   },
   togglePause(force) {
     if (!this.fighting() || ['matchEnd'].includes(GAME.state)) return;
+    $('pRestart').classList.toggle('hidden', GAME.mode === 'online');
+    $('pQuit').textContent = GAME.mode === 'online' ? 'Forfeit & Leave' : 'Quit to Menu';
     GAME.paused = force !== undefined ? force : !GAME.paused;
     PADS.forEach(p => p.clear());
     if (GAME.paused) this.show('pause'); else { this.show(null); $('moves').classList.add('hidden'); $('options').classList.add('hidden'); }
@@ -244,6 +277,7 @@ const UI = {
     }
     if (this.cur === 'ladder') { if (c === 'Enter' || c === 'KeyF') this.ladderFight(); else if (c === 'Escape') this.toTitle(); return true; }
     if (this.cur === 'result') { if (c === 'Enter') this.resultPrimary(); else if (c === 'Escape') this.toTitle(); return true; }
+    if (this.cur === 'online') { if (c === 'Escape') { NET.leave(); this.openSelect('online'); } return true; }
     if (this.cur === 'pause') { if (c === 'Escape' || c === 'KeyP' || c === 'Enter') this.togglePause(false); return true; }
     if (c === 'Escape' || c === 'KeyP') { this.togglePause(true); return true; }
     if (c === 'Tab' && GAME.mode === 'training' && GAME.ai) {
@@ -287,6 +321,8 @@ $('selGo').onclick = () => UI.go();
 $('arenaPick').querySelectorAll('button').forEach(b => b.onclick = () => { GAME.arenaIdx = (GAME.arenaIdx + +b.dataset.d + ARENAS.length) % ARENAS.length; audio.sfx('select'); UI.refreshSelect(); });
 $('diffPick').querySelectorAll('button').forEach(b => b.onclick = () => { SAVE.settings.diff = (SAVE.settings.diff + +b.dataset.d + 3) % 3; persist(); syncOptions(); UI.refreshSelect(); });
 $('ladGo').onclick = () => UI.ladderFight();
+$('onGo').onclick = () => { audio.init(); UI.findMatch(); };
+$('onCancel').onclick = () => { NET.leave(); UI.openSelect('online'); };
 $('ladQuit').onclick = () => UI.toTitle();
 $('pResume').onclick = () => UI.togglePause(false);
 $('pRestart').onclick = () => { GAME.paused = false; UI.show(null); GAME.newMatch(); };
@@ -316,7 +352,7 @@ function syncOptions() {
   const s = SAVE.settings;
   $('oDiff').textContent = DIFFS[s.diff]; $('oRounds').textContent = s.rounds === 1 ? '1 (sudden death)' : s.rounds; $('oTimer').textContent = s.timer;
   $('oSfx').value = s.sfx; $('oMus').value = s.music; $('oShake').textContent = s.shake ? 'ON' : 'OFF'; $('oFlash').textContent = s.reduceFlash ? 'ON' : 'OFF';
-  $('oTouch').textContent = s.touch.toUpperCase(); $('oFull').textContent = s.autoFull ? 'ON' : 'OFF'; $('oVoice').textContent = s.voice ? 'ON' : 'OFF'; $('oCam').textContent = s.cam ? 'ON' : 'OFF'; $('hSound').textContent = s.muted ? 'SFX OFF' : 'SFX ON';
+  $('oTouch').textContent = s.touch.toUpperCase(); $('oFull').textContent = s.autoFull ? 'ON' : 'OFF'; $('oVoice').textContent = s.voice ? 'ON' : 'OFF'; $('oCam').textContent = s.cam ? 'ON' : 'OFF'; $('oBar').textContent = s.bar.toUpperCase(); $('hSound').textContent = s.muted ? 'SFX OFF' : 'SFX ON';
   if ($('diffName')) $('diffName').textContent = DIFFS[s.diff];
 }
 $('oDiff').onclick = () => { SAVE.settings.diff = (SAVE.settings.diff + 1) % 3; persist(); syncOptions(); };
@@ -326,6 +362,7 @@ $('oSfx').oninput = (e) => { SAVE.settings.sfx = +e.target.value; persist(); aud
 $('oMus').oninput = (e) => { SAVE.settings.music = +e.target.value; persist(); audio.applyVolumes(); };
 $('oFull').onclick = () => { SAVE.settings.autoFull = !SAVE.settings.autoFull; persist(); syncOptions(); if (SAVE.settings.autoFull) autoFull(); };
 $('oVoice').onclick = () => { SAVE.settings.voice = !SAVE.settings.voice; persist(); syncOptions(); announce('announcer online'); };
+$('oBar').onclick = () => { const m = ['auto', 'on', 'off']; SAVE.settings.bar = m[(m.indexOf(SAVE.settings.bar) + 1) % 3]; persist(); syncOptions(); applyBar(); };
 $('oCam').onclick = () => { SAVE.settings.cam = !SAVE.settings.cam; persist(); syncOptions(); };
 $('oShake').onclick = () => { SAVE.settings.shake = !SAVE.settings.shake; persist(); syncOptions(); };
 $('oFlash').onclick = () => { SAVE.settings.reduceFlash = !SAVE.settings.reduceFlash; persist(); syncOptions(); };
@@ -346,6 +383,53 @@ window.addEventListener('resize', resize); document.addEventListener('fullscreen
 // tap the canvas on result-less states to skip banners / resume
 cv.addEventListener('pointerdown', () => audio.init());
 
+/* ---- controls bar below the arena: live keycaps, ION readiness, context hints ---- */
+const BAR_FULL = [['A D', 'MOVE', ['left', 'right'], 'any'], ['W', 'JUMP', ['up']], ['S', 'CROUCH', ['down']], ['F', 'PUNCH', ['punch']], ['G', 'KICK', ['kick']], ['H', 'BLOCK', ['block']],
+  ['S+F', 'SWEEP', ['down', 'punch']], ['S+G', 'UPLINK', ['down', 'kick']], ['H+F', 'GRAB', ['block', 'punch']], ['R', 'BLAST', ['special'], 0, 30], ['S+R', 'SIG', ['down', 'special'], 0, 25],
+  ['T', 'BLINK', ['tele'], 0, 40], ['H+G', 'BREAKER', ['block', 'kick'], 0, 50], ['Y', 'SURGE', ['surge'], 0, 100]];
+const BAR_P1 = [['A D', 'MOVE', ['left', 'right'], 'any'], ['W', 'JUMP', ['up']], ['S', 'DOWN', ['down']], ['F', 'PUNCH', ['punch']], ['G', 'KICK', ['kick']], ['H', 'BLOCK', ['block']],
+  ['R', 'BLAST', ['special'], 0, 30], ['T', 'BLINK', ['tele'], 0, 40], ['Y', 'SURGE', ['surge'], 0, 100]];
+const BAR_P2 = [['◀ ▶', 'MOVE', ['left', 'right'], 'any'], ['▲', 'JUMP', ['up']], ['▼', 'DOWN', ['down']], ['J', 'PUNCH', ['punch']], ['K', 'KICK', ['kick']], ['L', 'BLOCK', ['block']],
+  ['U', 'BLAST', ['special'], 0, 30], ['I', 'BLINK', ['tele'], 0, 40], ['O', 'SURGE', ['surge'], 0, 100]];
+let barKey = '';
+function barOn() { const s = SAVE.settings.bar; return s === 'on' || (s === 'auto' && !matchMedia('(pointer:coarse)').matches); }
+function applyBar() { document.body.classList.toggle('bar-on', barOn()); resize(); }
+function barGroup(list, who, cls, fighter, padIdx) {
+  return `<div class="grp" data-pad="${padIdx}" data-f="${fighter ? fighter.idx : ''}"><span class="who ${cls}">${who}</span>` + list.map(([key, label, keys, any, cost]) => {
+    const name = label === 'SIG' && fighter ? fighter.d.sig.name : label;
+    const c = cost ? (cost >= 100 ? ' cost super' : ' cost') : '';
+    return `<span class="kc${c}${name.length > 7 ? ' wide' : ''}" data-keys="${(keys || []).join(',')}" data-any="${any ? 1 : ''}" data-cost="${cost || ''}"><b>${key}</b>${name}${cost && cost < 100 ? ' ' + cost : ''}</span>`;
+  }).join('') + '</div>';
+}
+function updateBar() {
+  if (!barOn()) return;
+  const bar = $('ctrlBar'), fighting = UI.fighting() && UI.cur === null;
+  const online = GAME.mode === 'online';
+  const key = fighting ? `${GAME.mode}|${GAME.p1.d.id}|${GAME.p2.d.id}|${online ? NET.me : ''}` : 'menu|' + UI.cur;
+  if (key !== barKey) {
+    barKey = key;
+    if (!fighting) bar.innerHTML = `<span class="menuhint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows navigate · <kbd>F</kbd> / <kbd>Enter</kbd> select · <kbd>G</kbd> colours · <kbd>Esc</kbd> back · <kbd>M</kbd> mute · <kbd>N</kbd> music · ⛶ fullscreen</span>`;
+    else if (GAME.mode === '2p') bar.innerHTML = barGroup(BAR_P1, 'P1', 'p1', GAME.p1, 0) + '<span class="sep"></span>' + barGroup(BAR_P2, 'P2', 'p2', GAME.p2, 1);
+    else {
+      const me = online ? (NET.me === 0 ? GAME.p1 : GAME.p2) : GAME.p1;
+      bar.innerHTML = barGroup(BAR_FULL, online ? 'YOU' : 'P1', 'p1', me, 0) + `<span class="sep"></span><span class="kc"><b>${GAME.mode === 'training' ? 'TAB' : 'P'}</b>${GAME.mode === 'training' ? 'DUMMY' : online ? 'MENU' : 'PAUSE'}</span>`;
+    }
+  }
+  if (!fighting) return;
+  bar.querySelectorAll('.grp').forEach(g => {
+    const pad = PADS[+g.dataset.pad], f = g.dataset.f === '2' ? GAME.p2 : GAME.p1;
+    g.querySelectorAll('.kc').forEach(kc => {
+      const ks = kc.dataset.keys ? kc.dataset.keys.split(',') : [];
+      const on = ks.length && (kc.dataset.any ? ks.some(k => pad.held[k]) : ks.every(k => pad.held[k]));
+      kc.classList.toggle('on', !!on);
+      const cost = +kc.dataset.cost;
+      if (cost) { const ok = f.meter >= cost; kc.classList.toggle('ready', ok); kc.classList.toggle('dim', !ok); }
+    });
+  });
+}
+setInterval(updateBar, 70);
+['keydown', 'keyup'].forEach(ev => window.addEventListener(ev, () => setTimeout(updateBar, 0)));
+
 /* ---- floating toolbar: fades during fights, returns on mouse move / menus ---- */
 let toolT = 0;
 function poke() { toolT = performance.now(); }
@@ -362,12 +446,12 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { window.add
 // audio track starts as soon as the context exists
 const _init = audio.init.bind(audio);
 audio.init = function () { const fresh = !this.ctx; _init(); if (fresh && this.ctx && this.track) { this.nextT = this.ctx.currentTime + 0.08; if (!this.timer) this.timer = setInterval(() => this.schedule(), 25); } };
-syncOptions(); resize();
+syncOptions(); document.body.classList.toggle('bar-on', barOn()); resize();
 if (QS.get('splash') === '0') UI.toTitle(); else UI.splashT = setTimeout(() => UI.leaveSplash(), 2800);
 GAME.state = 'menu'; audio.playMusic('menu');
 requestAnimationFrame((t) => { lastT = t; requestAnimationFrame(frame); });
 // test hook
-window.IOC = { GAME, UI, FIGHTERS, MOVES, PADS, SAVE, VERSION, get projectiles() { return projectiles; }, get hazards() { return hazards; } };
+window.IOC = { GAME, UI, FIGHTERS, MOVES, PADS, SAVE, VERSION, get projectiles() { return projectiles; }, get hazards() { return hazards; }, NET, NETPADS, stateHash, snapshot, applySnapshot };
 </script>
 </body>
 </html>

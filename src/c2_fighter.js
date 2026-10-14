@@ -4,11 +4,11 @@
  * Presses are buffered for 6 frames so quick taps never get lost. */
 const PAD_KEYS = ['left', 'right', 'up', 'down', 'punch', 'kick', 'block', 'special', 'tele', 'surge'];
 class Pad {
-  constructor() { this.held = {}; this.buf = {}; this.src = {}; this.dn = {}; this.bl = {}; this.age = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; this.age[k] = 99; }); }
+  constructor() { this.held = {}; this.buf = {}; this.src = {}; this.dn = {}; this.bl = {}; this.age = {}; this.latch = {}; PAD_KEYS.forEach(k => { this.held[k] = false; this.buf[k] = 0; this.age[k] = 99; }); }
   set(k, v, src = 'k') {
     // several sources (keyboard / touch / gamepad / ai) may hold the same key
     const key = k + ':' + src;
-    if (v) { if (!this.src[key]) { this.src[key] = 1; if (!this.held[k]) { this.buf[k] = 6; this.age[k] = 0; this.dn[k] = this.held.down; this.bl[k] = this.held.block; } } }
+    if (v) { if (!this.src[key]) { this.src[key] = 1; if (!this.held[k]) { this.buf[k] = 6; this.age[k] = 0; this.latch[k] = true; this.dn[k] = this.held.down; this.bl[k] = this.held.block; } } }
     else delete this.src[key];
     this.held[k] = Object.keys(this.src).some(s => s.startsWith(k + ':'));
   }

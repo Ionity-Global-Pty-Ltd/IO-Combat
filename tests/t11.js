@@ -16,7 +16,8 @@ const RESET = `const G=IOC.GAME;[G.p1,G.p2].forEach(f=>{f.state='idle';f.f=0;f.v
 
   // ---- fullscreen-first layout
   const box = await page.locator('#cv').boundingBox();
-  ok(box.width >= 1590 && box.height >= 890, `canvas fills the viewport (${box.width | 0}x${box.height | 0} of 1600x900)`);
+  const bar = await page.locator('#ctrlBar').boundingBox();
+  ok(bar && Math.abs(box.height + bar.height - 900) < 3 && bar.y >= box.y + box.height - 1, `canvas + controls bar below fill the viewport (${box.width | 0}x${box.height | 0} + bar ${bar ? bar.height | 0 : 0})`);
   ok(await page.isVisible('#tools #hFull'), 'floating toolbar with fullscreen button');
   ok(await page.evaluate(() => !!document.querySelector('link[rel=manifest]')), 'PWA manifest linked (display: fullscreen)');
   await page.setViewportSize({ width: 1000, height: 900 }); await wait(200);

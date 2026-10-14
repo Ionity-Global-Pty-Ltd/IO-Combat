@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://www.ionity.fun/combat/banner_og_1200x630.png">
 <!--
-  IO-COMBAT · Document ID GME-2026-10-011 · Version 1.1.0
+  IO-COMBAT · Document ID GME-2026-10-011 · Version 1.2.0
   Author: Johan Wilhelm van Antwerp | Ionity (Pty) Ltd | AEDI (Antwerp Ecosystems Designs Ionity)
   Governance: Policy 986 AED | License: AED 900 | CC BY-NC-SA 4.0 where stated
   (c) 2018-2026 Antwerp Designs | Ionity (Pty) Ltd - All Rights Reserved - TM2
@@ -65,16 +65,37 @@ button{font-family:var(--display);cursor:pointer}
 .btn.big{font-size:15px;padding:12px 22px}
 .btns{display:flex;flex-wrap:wrap;gap:6px}
 
-#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;
+:root{--bar:0px}
+body.bar-on{--bar:62px}
+#stage{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;
   background:radial-gradient(ellipse at 50% 40%,#0b1a2b 0%,#03070d 70%,#000 100%)}
-#stage canvas{display:block;width:min(100vw,calc(100dvh*16/9));height:min(100dvh,calc(100vw*9/16));background:#04080f;touch-action:none;
+#stage canvas{display:block;width:min(100vw,calc((100dvh - var(--bar))*16/9));height:min(calc(100dvh - var(--bar)),calc(100vw*9/16));background:#04080f;touch-action:none;
   box-shadow:0 0 60px rgba(0,198,255,.12)}
+#ctrlBar{display:none;width:min(100vw,calc((100dvh - var(--bar))*16/9));height:var(--bar);flex-shrink:0;align-items:center;justify-content:center;gap:10px;
+  padding:6px 10px;background:linear-gradient(180deg,#071222,#03070d);border-top:1px solid rgba(0,198,255,.35);overflow:hidden}
+body.bar-on #ctrlBar{display:flex}
+#ctrlBar .grp{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;overflow:hidden}
+#ctrlBar .who{font-family:var(--display);font-weight:900;font-size:11px;padding:3px 6px;border-radius:4px;letter-spacing:1px;white-space:nowrap}
+#ctrlBar .who.p1{background:#00c6ff;color:#001522}#ctrlBar .who.p2{background:#ff3b5c;color:#fff}
+#ctrlBar .sep{width:1px;align-self:stretch;background:rgba(0,198,255,.25);margin:0 4px}
+.kc{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:44px;padding:3px 6px;border:1px solid #1d3a58;border-radius:7px;
+  background:#08131f;color:#8aa4bf;font-size:10px;font-weight:700;letter-spacing:.5px;line-height:1.05;white-space:nowrap;transition:background .06s,border-color .06s,opacity .2s}
+.kc b{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#e6f3ff;background:#12253a;border:1px solid #2a4a6c;border-bottom-width:2px;border-radius:4px;padding:0 5px;margin-bottom:2px}
+.kc.on{background:#00c6ff;border-color:#bff1ff;color:#001522;box-shadow:0 0 14px rgba(0,198,255,.6)}.kc.on b{background:#e9fbff;color:#001522}
+.kc.cost.dim{opacity:.38}.kc.cost.ready{border-color:#3b82f6;color:#cfe8ff}
+.kc.super.ready{border-color:#ffd166;color:#ffd166;box-shadow:0 0 12px rgba(255,209,102,.45);animation:pulseK 1s infinite}
+@keyframes pulseK{50%{box-shadow:0 0 22px rgba(255,209,102,.8)}}
+.kc.wide{min-width:66px}
+#ctrlBar .menuhint{font-size:12px;color:#8aa4bf;letter-spacing:1px}#ctrlBar .menuhint kbd{margin:0 2px}
+@media (max-width:1100px){.kc{min-width:36px;padding:2px 4px;font-size:9px}.kc b{font-size:11px}#ctrlBar{gap:6px}}
 #tools{position:absolute;top:max(6px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:70;display:flex;gap:6px;transition:opacity .4s}
 #tools.dim{opacity:0;pointer-events:none}
 #tools .btn{padding:6px 10px;font-size:12px;background:rgba(10,26,44,.72);backdrop-filter:blur(3px)}
 #brandTag{position:absolute;top:max(8px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));z-index:70;display:flex;align-items:center;gap:8px;transition:opacity .4s}
 #brandTag svg{height:16px;width:auto}#brandTag b{font-family:var(--display);font-size:13px;letter-spacing:2px;color:#00c6ff}
 #brandTag.dim{opacity:0}
+.spin{width:34px;height:34px;margin:4px auto 10px;border:3px solid rgba(0,198,255,.2);border-top-color:#00c6ff;border-radius:50%;animation:spin 0.9s linear infinite;display:none}
+.spin.on{display:block}@keyframes spin{to{transform:rotate(360deg)}}
 .foot{margin-top:14px;font-size:12px;color:var(--mute);text-align:center}
 .foot .links{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center}
 .foot .legal{font-size:10.5px;color:#5d7894;margin-top:4px}

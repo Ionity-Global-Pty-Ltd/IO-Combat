@@ -29,6 +29,7 @@
       <button class="btn big" data-mode="ai">Versus AI</button>
       <button class="btn big" data-mode="2p">2P Local</button>
       <button class="btn big" data-mode="training">Training</button>
+      <button class="btn big gold" data-mode="online" style="grid-column:span 2;order:-1">⚡ Online PvP · Ranked Queue</button>
       <button class="btn" data-act="moves">Move List</button>
       <button class="btn" data-act="options">Options</button>
       <a class="btn" style="text-align:center;display:flex;align-items:center;justify-content:center" href="../" id="moreGames">◀ Play IO-MAN</a>
@@ -73,6 +74,21 @@
     <div class="sub" id="ladSub">Stage 1</div>
     <canvas id="ladCv" width="960" height="300" style="width:min(92%,900px);height:auto;margin-top:12px"></canvas>
     <div class="row"><button class="btn" id="ladQuit">Quit</button><button class="btn big gold" id="ladGo">FIGHT ▶</button></div>
+  </div>
+
+  <!-- ONLINE -->
+  <div id="online" class="ov hidden">
+    <div class="panel" style="max-width:560px;text-align:center">
+      <h3 style="font-size:22px">⚡ ONLINE PvP · IONITY CLOUD</h3>
+      <div class="sub" style="margin-bottom:10px">Matchmaking queue · peer-to-peer lockstep</div>
+      <div id="onPick" style="margin-bottom:10px"></div>
+      <div class="opt" style="justify-content:center;gap:10px;border:0"><span>Your tag</span>
+        <input id="onName" maxlength="9" autocomplete="off" spellcheck="false" style="font:800 16px Orbitron,Arial;letter-spacing:2px;text-transform:uppercase;width:170px;padding:7px 10px;border-radius:7px;border:1px solid #00c6ff;background:#050c16;color:#fff;text-align:center"></div>
+      <div id="onStatus" style="min-height:52px;margin:10px 0;font-size:15px"></div>
+      <div class="spin" id="onSpin"></div>
+      <div class="row"><button class="btn big gold" id="onGo">FIND MATCH</button><button class="btn red" id="onCancel">Cancel</button></div>
+      <div class="hint">Online play uses anonymous IONITY CLOUD sign-in: no account, no personal data. Match traffic goes directly between the two browsers.</div>
+    </div>
   </div>
 
   <!-- PAUSE -->
@@ -149,12 +165,14 @@
       <div class="opt"><span>Auto fullscreen</span><button class="btn" id="oFull">ON</button></div>
       <div class="opt"><span>Announcer voice</span><button class="btn" id="oVoice">ON</button></div>
       <div class="opt"><span>Dynamic camera</span><button class="btn" id="oCam">ON</button></div>
+      <div class="opt"><span>Controls bar (below arena)</span><button class="btn" id="oBar">AUTO</button></div>
       <div class="opt"><span>Touch controls</span><button class="btn" id="oTouch">AUTO</button></div>
       <div class="opt" style="border:0"><span>Reset stats &amp; unlocks</span><button class="btn red" id="oReset">RESET</button></div>
     </div>
   </div>
 
   <!-- TOUCH DECK -->
+  <div id="ctrlBar" aria-label="Controls"></div>
   <div id="touch" class="hidden">
     <div class="pad">
       <div class="tb up" data-k="up">▲</div>

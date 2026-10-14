@@ -1,10 +1,10 @@
 <script>
 'use strict';
 /* =========================================================================
- * IO-COMBAT v1.1.0 · GME-2026-10-011 · Ionity (Pty) Ltd · AEDI · Policy 986 AED
+ * IO-COMBAT v1.2.0 · GME-2026-10-011 · Ionity (Pty) Ltd · AEDI · Policy 986 AED
  * Original 2D arcade fighter. Vanilla JS, one file, no build step.
  * ========================================================================= */
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const W = 1280, H = 720, GROUND = 604, WALL_L = 60, WALL_R = 1220;
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -16,8 +16,8 @@ const QS = new URLSearchParams(location.search);
 /* ---------------------------------------------------------------- STORAGE */
 const STORE_KEY = 'iocombat.v1';
 const DEFAULT_SAVE = {
-  settings: { diff: 1, rounds: 2, timer: 99, sfx: 70, music: 45, shake: true, reduceFlash: false, touch: 'auto', muted: false, musicOn: true, autoFull: true, voice: true, cam: true },
-  stats: { wins: 0, losses: 0, perfects: 0, deletes: 0, arcadeClears: 0, bestStreak: 0, streak: 0, played: 0, survivalBest: 0, parries: 0 },
+  settings: { diff: 1, rounds: 2, timer: 99, sfx: 70, music: 45, shake: true, reduceFlash: false, touch: 'auto', muted: false, musicOn: true, autoFull: true, voice: true, cam: true, bar: 'auto', name: '' },
+  stats: { wins: 0, losses: 0, perfects: 0, deletes: 0, arcadeClears: 0, bestStreak: 0, streak: 0, played: 0, survivalBest: 0, parries: 0, onlineWins: 0, onlineLosses: 0, onlinePlayed: 0 },
   unlocked: { auditor: false }
 };
 function loadSave() {

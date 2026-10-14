@@ -8,7 +8,7 @@ small=f'<path transform="{tr}" fill="#00c6ff" d="{d}"/>'
 big=f'<defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3aa0ff"/><stop offset="1" stop-color="#1658A4"/></linearGradient></defs><path transform="{tr}" fill="url(#lg)" d="{d}"/>'
 src=os.path.join(ROOT,'src/')
 html=open(src+'a_head.html').read()+open(src+'b_body.html').read()
-for f in ['c1_core.js','c2_fighter.js','c3_world.js','c4_game.js','c5_ui.js']: html+=open(src+f).read()
+for f in ['c1_core.js','c2_fighter.js','c3_world.js','c4_game.js','c6_net.js','c5_ui.js']: html+=open(src+f).read()
 html=html.replace('{{LOGO_PATH_SPLASH}}',big).replace('{{LOGO_PATH}}',small)
 open(os.path.join(ROOT,'index.html'),'w').write(html)
 print(len(html))

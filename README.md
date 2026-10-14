@@ -2,7 +2,7 @@
 
 > An original 2D arcade fighter in a single HTML file. Pick an avatar, win two rounds, then **TERMINATE** your rival before the clock runs out.
 
-**Document ID:** GME-2026-10-011 · **Version:** 1.1.0 · **Classification:** PUBLIC (source published for reference)
+**Document ID:** GME-2026-10-011 · **Version:** 1.2.0 · **Classification:** PUBLIC (source published for reference)
 **Author:** Johan Wilhelm van Antwerp · Ionity (Pty) Ltd · AEDI (Antwerp Ecosystems Designs Ionity) · ORCID [0009-0005-7181-0347](https://orcid.org/0009-0005-7181-0347)
 **Governance:** Policy 986 AED · **License:** AED 900 · CC BY-NC-SA 4.0 where stated
 **Play:** https://www.ionity.fun/combat/ · **Web:** https://www.ionity.today · https://www.ionity.world · Ref: https://www.ionity.co.za · Contact: ai@ionity.today
@@ -11,6 +11,41 @@
 ![IO-COMBAT](banner_og_1200x630.png)
 
 ---
+
+## v1.2.0 — "ONLINE PvP & CONTROLS BAR": what's new
+
+**⚡ Online PvP through the IONITY CLOUD queue.** Pick *Online PvP · Ranked Queue* on the title, choose your avatar and tag, then press **FIND MATCH**.
+
+How a match comes together:
+1. **Sign-in.** Each tab signs in anonymously to Firebase (project `io-man`, the same Spark-tier backend as IO-MAN). There is no account and no personal data.
+2. **Queue.** You join a **Firestore matchmaking queue**, `pvp_queue`, with a heartbeat every 8 s. Whoever finds a waiting player first claims them in a transaction. If two players queue at the same moment, a uid tie-break makes sure only one of them claims.
+3. **Room.** The claimer opens a `pvp_rooms/{id}` signalling room. The two browsers swap the WebRTC offer, answer and ICE candidates there.
+4. **Peer-to-peer link.** From then on all gameplay runs **directly between the two browsers** over a WebRTC data channel. Firestore is only used for the queue and the handshake, about 20 writes per match, so the free tier comfortably covers it. The signalling documents are deleted once the link is up.
+
+How the match stays in sync:
+- **Lockstep netcode.** Both browsers run the same deterministic 60 Hz simulation from the same inputs. The input delay (2–8 frames) is set from a 6-ping RTT measurement taken before the match.
+- **Desync safety net.** Both sides hash the game state every 30 frames. On a mismatch the host sends a full snapshot and the guest re-simulates from it.
+- **HUD:** shows YOU / RIVAL tags and live ping and delay, plus a "WAITING FOR RIVAL" notice if the link stalls.
+- **After the match:** **REMATCH** needs both players to accept. Leaving, or a 12-second stall, gives the remaining player a **forfeit win**.
+- **Records:** online wins and losses are kept on the device.
+
+**Network notes.** Connections use public STUN only (Google, Cloudflare). On a few strict corporate or carrier NATs a direct link may not be possible, and the game says so after 20 s. Playing on ionity.fun is recommended.
+
+**Security rules.** The Firestore rules for the PvP collections went live on `io-man`, alongside the existing IO-MAN rules, and the file is in `IO-Man/firebase/firestore.rules`. The rules check:
+- the shape of queue entries and the clean-tag filter;
+- that a claim may only flip `status → matched` and attach the claimer;
+- that rooms are readable and writable only by their two members;
+- that ICE candidates are readable only inside their room.
+
+**Controls bar below the arena** (Options → *Controls bar*: AUTO / ON / OFF; AUTO means on for desktop, off for touch):
+- **Layout:** live keycaps for every action sit under the game. The arena shrinks slightly so the bar never covers it.
+- **Feedback:** keys **light up as you press them**, combos like `S+F` light up when both are held, and ION costs dim until you can afford them. **SURGE pulses gold** when ready, and the SIG cap shows your fighter's signature name.
+- **By mode:** 2P shows a P1 group and a P2 group side by side. Menus show navigation hints.
+
+**Minor polish**
+- **FIRST STRIKE:** the first clean hit of each round gives +5 ION.
+- **10 SECONDS:** a warning appears as the round clock runs out.
+- **Typing:** the name box no longer triggers game keys.
 
 ## v1.1.0 — "FULL SCREEN & SIGNATURES": what's new
 
@@ -77,7 +112,7 @@ On phones, play in **landscape**. Portrait shows a rotate screen and pauses the 
 | **ION Breaker** (50 ION, while hit) | `H`+`G` | `L`+`K` | RB + Y | BLOCK + KICK |
 | Alt colours (select screen) | `G` | `K` | | 🎨 |
 | Fullscreen | ⛶ button / double-click | | | ⛶ |
-| Pause · mute · music | `P`/`Esc` · `M` · `N` | | Start | II |
+| Pause · mute · music (online: menu, forfeit) | `P`/`Esc` · `M` · `N` | | Start | II |
 | Training dummy mode | `Tab` | | | |
 
 In 1P modes, the arrow keys and `J K L U I O` also control P1.
@@ -127,6 +162,7 @@ The stats feed the formulas directly: damage scales with power ÷ defence, and w
 
 ## Modes
 
+- **Online PvP:** Firestore matchmaking queue, peer-to-peer lockstep, rematch and forfeit.
 - **Survival:** endless one-round fights. Health carries over (+25 per win), and the best run is saved.
 - **Arcade Ladder:** five random rivals, then THE AUDITOR in the ROOT CAVERN. The CPU gets one step harder for the last two fights. A loss offers CONTINUE without losing ladder progress, and clearing the ladder unlocks the boss.
 - **Versus AI:** you choose the rival, arena and CPU level: EASY / NORMAL / IRON.
@@ -181,7 +217,19 @@ IO-COMBAT started from a generic HTML5 fighting-game prototype. It was rebuilt a
 
 ## Build & verify
 
-The game is a single file (~2,170 lines, ~180 KB) of vanilla JS and canvas, with no frameworks. `src/` holds the readable parts, and `build.py` assembles `index.html`, inlining the IONITY logo from `assets/logo/IONITY_logo_vector.svg`.
+The game is a single file (~2,600 lines, ~210 KB) of vanilla JS and canvas, with no frameworks. `src/` holds the readable parts, and `build.py` assembles `index.html`, inlining the IONITY logo from `assets/logo/IONITY_logo_vector.svg`.
+
+v1.2.0 was verified headless in Chromium with Playwright, including a **live online match**. `tests/t12_online.js` runs two independent browsers against the real IONITY CLOUD, and its 12 checks pass:
+- queue → match → WebRTC link;
+- one host and one guest that agree on fighters and names;
+- lockstep within one frame over ~800 frames of random button mashing on both sides;
+- **all shared state hashes identical**, so the simulation is deterministic;
+- a deliberately corrupted guest repaired by a host snapshot;
+- the match reaching results on both sides, and REMATCH starting a new match;
+- leaving giving the rival a forfeit win;
+- zero console errors.
+
+`t11.js` (26 checks, now including the canvas + controls bar layout) and `t10.js` (43 checks) also pass.
 
 v1.1.0 was verified headless in Chromium with Playwright. **`tests/t11.js` (26 checks) passed 3 runs in a row and the regression suite `tests/t10.js` (43 checks) passed twice, all with zero console errors.** The v1.1 checks cover:
 - **Fullscreen layout:** the canvas fills a 1600×900 viewport, letterboxes on a tall window and fills a Pixel 7 screen; the manifest is linked and the toolbar fades in fights.
@@ -203,15 +251,16 @@ The v1.0 regression suite (`tests/t10.js`) covers:
 - **Phones:** the Pixel 7 landscape touch deck (a PUNCH tap lands) and the Pixel 7 portrait rotate prompt.
 
 ```
-sha256  index.html / IONITY_IO-COMBAT.html   b3f502d4547712a322d0680cf1c1d509c11eb048a4b46e09742911ad50d2fc24   v1.1.0
+sha256  index.html / IONITY_IO-COMBAT.html   61cf88c8bbb06ec8676e0bb4fc1f2c0499862f231241cdc9a04dd2861cdc62a7   v1.2.0
+sha256  (v1.1.0)                              b3f502d4547712a322d0680cf1c1d509c11eb048a4b46e09742911ad50d2fc24
 sha256  (v1.0.0)                              e1d94291cd3496618a96d32c5fb6caa643a765ee32df96e21b22045b32ae2788
 ```
 
 ## Repository layout
 
 ```
-index.html                 v1.1.0, also served at ionity.fun/combat/
-IONITY_IO-COMBAT.html      v1.1.0 (same file, descriptive name)
+index.html                 v1.2.0, also served at ionity.fun/combat/
+IONITY_IO-COMBAT.html      v1.2.0 (same file, descriptive name)
 manifest.webmanifest       PWA manifest (display: fullscreen, landscape)
 sw.js                      service worker (offline play, network-first)
 icon-192.png · icon-512.png  app icons
@@ -220,7 +269,8 @@ src/                       readable source parts (head, body, core, fighter, wor
 build.py                   assembles index.html from src/
 assets/logo/               official IONITY logo vector
 previews/                  headless screenshots
-tests/t10.js · t11.js      v1.0 regression + v1.1 feature suites (Playwright + Chromium)
+tests/t10.js · t11.js · t12_online.js   regression, v1.1 features, live online PvP E2E (Playwright + Chromium)
+src/c6_net.js              online PvP: Firestore queue + signalling, WebRTC, lockstep, resync
 README.md · LICENSE
 ```
 

@@ -1,11 +1,12 @@
 
 /* ------------------------------------------------------------------- GAME */
 const cv = $('cv'), ctx = cv.getContext('2d');
-const PADS = [new Pad(), new Pad()];
+const PADS = [new Pad(), new Pad()];      // local devices (keyboard / touch / gamepad)
+const NETPADS = [new Pad(), new Pad()];   // online: both fighters are driven only by lockstep inputs
 const GAME = {
   state: 'menu', mode: 'ai', paused: false, p1: null, p2: null, ai: null, ai1: null, arena: ARENAS[0], round: 1, timer: 99 * 60, stateT: 0,
   hitstop: 0, cinematic: 0, shakeAmt: 0, banner: null, slow: 0, tick: 0, whiteFlash: 0, termT: 0, winner: null, ladder: null, ladderIdx: 0,
-  sel: [0, 1], alt: [false, false], arenaIdx: 0, stats: null, attract: null, cam: { x: W / 2, z: 1 }, survival: null,
+  pads: PADS, firstStrike: false, sel: [0, 1], alt: [false, false], arenaIdx: 0, stats: null, attract: null, cam: { x: W / 2, z: 1 }, survival: null,
 
   shake(v) { if (SAVE.settings.shake) this.shakeAmt = Math.max(this.shakeAmt, v); },
   say(text, sub = '', dur = 90, color = '#ffffff', voice) { if (this.sandbox) return; this.banner = { text, sub, t: 0, dur, color }; if (voice) announce(voice === true ? text : voice); },
@@ -13,10 +14,11 @@ const GAME = {
   newMatch() {
     const d1 = FIGHTERS[this.sel[0]], d2 = FIGHTERS[this.sel[1]];
     const alt2 = this.alt[1] !== (d1.id === d2.id && this.alt[0] === this.alt[1]); // mirror match: P2 auto-swaps colours
-    this.p1 = new Fighter(1, d1, 380, 1, PADS[0], this.alt[0]); this.p2 = new Fighter(2, d2, 900, -1, PADS[1], alt2);
+    this.pads = this.mode === 'online' ? NETPADS : PADS; this.pads.forEach(p => p.clear());
+    this.p1 = new Fighter(1, d1, 380, 1, this.pads[0], this.alt[0]); this.p2 = new Fighter(2, d2, 900, -1, this.pads[1], alt2); this.tick = 0;
     const lvl = this.mode === 'arcade' ? Math.min(2, SAVE.settings.diff + (this.ladderIdx >= 4 ? 1 : 0))
       : this.mode === 'survival' ? Math.min(2, SAVE.settings.diff + Math.floor((this.survival ? this.survival.wins : 0) / 4)) : SAVE.settings.diff;
-    this.ai = (this.mode === '2p') ? null : new AI(this.p2, this.p1, lvl);
+    this.ai = (this.mode === '2p' || this.mode === 'online') ? null : new AI(this.p2, this.p1, lvl);
     if (this.mode === 'training') { this.ai.dummy = 'STAND'; }
     this.attract = null;
     this.round = 1; floorPix = []; this.stats = { p1: { hits: 0, maxCombo: 0, dmg: 0 }, p2: { hits: 0, maxCombo: 0, dmg: 0 } };
@@ -30,7 +32,7 @@ const GAME = {
     projectiles = []; particles = []; popups = []; hazards = []; rings = [];
     if (this.mode === 'survival' && this.survival) this.p1.hp = this.p1.shownHp = this.survival.hp;
     this.cam = { x: W / 2, z: 1 };
-    this.timer = (this.mode === 'training' ? 0 : SAVE.settings.timer) * 60;
+    this.timer = (this.mode === 'training' ? 0 : this.mode === 'online' ? NET.rules.timer : SAVE.settings.timer) * 60; this.firstStrike = false;
     this.state = 'intro'; this.stateT = 0; this.hitstop = 0; this.cinematic = 0; this.slow = 0; this.winner = null;
     audio.sfx('gong');
     const last = this.p1.rounds === this.need() - 1 && this.p2.rounds === this.need() - 1;
@@ -38,7 +40,7 @@ const GAME = {
     const label = this.mode === 'training' ? 'TRAINING' : this.mode === 'survival' ? `CHALLENGER ${this.survival.wins + 1}` : last ? 'FINAL ROUND' : `ROUND ${this.round}`;
     this.say(label, `${this.p1.d.name}  VS  ${this.p2.d.name}`, 80, '#00c6ff', label.replace('CHALLENGER', 'challenger'));
   },
-  need() { return this.mode === 'survival' ? 1 : SAVE.settings.rounds; },
+  need() { return this.mode === 'survival' ? 1 : this.mode === 'online' ? NET.rules.rounds : SAVE.settings.rounds; },
 
   /* ---------- combat resolution ---------- */
   resolveHit(att, def, h) {
@@ -76,6 +78,7 @@ const GAME = {
     if (def.state === 'launched') dmg *= 0.8;
     def.hp = Math.max(0, def.hp - dmg); def.dmgTaken += dmg; S.dmg += dmg;
     if (this.sandbox && def.hp < 20) def.hp = 100;
+    if (!this.firstStrike && !this.sandbox && this.state === 'fight' && this.mode !== 'training') { this.firstStrike = true; att.addMeter(5); popup(att.x, att.y - 240 * att.scale, 'FIRST STRIKE +5', '#ffd166', 22); }
     att.addMeter(h.gain || 6); def.addMeter((h.gain || 6) * 0.6);
     def.flash = 8; def.freeze = 0;
     const airborne = !def.grounded || def.state === 'launched';
@@ -177,6 +180,9 @@ const GAME = {
       if (humanWon) { st.wins++; st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak); } else { st.losses++; st.streak = 0; }
       persist();
     }
+    if (this.mode === 'online') {
+      const iWon = (winner === this.p1 ? 0 : 1) === NET.me; SAVE.stats.onlinePlayed++; iWon ? SAVE.stats.onlineWins++ : SAVE.stats.onlineLosses++; persist();
+    }
     if (this.mode === 'survival' && this.survival) {
       if (humanWon) { this.survival.wins++; this.survival.hp = Math.min(100, this.p1.hp + 25); }
       SAVE.stats.survivalBest = Math.max(SAVE.stats.survivalBest, this.survival.wins); persist();
@@ -189,7 +195,7 @@ const GAME = {
     this.tick++;
     pollGamepads();
     if (this.state === 'menu' || this.state === 'select') { this.stepAttract(); return; }
-    if (this.paused) return;
+    if (this.paused && this.mode !== 'online') return;
     if (this.banner) { this.banner.t++; if (this.banner.dur > 0 && this.banner.t > this.banner.dur) this.banner = null; }
     if (this.whiteFlash > 0) this.whiteFlash--;
     this.stateT++;
@@ -201,6 +207,7 @@ const GAME = {
       case 'fight':
         if (this.mode !== 'training' && this.cinematic <= 0 && this.hitstop <= 0) {
           this.timer--; if (this.timer % 60 === 0 && this.timer <= 600 && this.timer > 0) audio.sfx('tick');
+          if (this.timer === 600) popup(W / 2, 170, '10 SECONDS', '#ff3b5c', 30);
           if (this.timer <= 0) { const w = p1.hp > p2.hp ? p1 : p2.hp > p1.hp ? p2 : null; return this.roundOver(w, 'time'); }
         }
         if (this.mode === 'training') this.trainingAssist();
@@ -234,12 +241,12 @@ const GAME = {
       this.cinematic--;
       const s = p1.state === 'surge' ? p1 : p2.state === 'surge' ? p2 : null;
       if (s) { s.update(s === p1 ? p2 : p1, this); s.updatePose(); }
-      this.stepFx(); PADS.forEach(p => p.tick()); return;
+      this.stepFx(); this.pads.forEach(p => p.tick()); return;
     }
     const active = ['fight', 'terminate', 'ko', 'deleted', 'roundEnd', 'intro', 'matchEnd'].includes(this.state);
     if (active) {
       const canControl = this.state === 'fight' || this.state === 'terminate';
-      if (!canControl) { PADS.forEach(p => p.clear()); if (this.ai) this.ai.apply({}); }
+      if (!canControl) { this.pads.forEach(p => p.clear()); if (this.ai) this.ai.apply({}); }
       p1.update(p2, this); p2.update(p1, this);
       // push boxes
       const dx = p2.x - p1.x;
@@ -267,7 +274,7 @@ const GAME = {
       hazards.forEach(h => h.update(this, h.owner === p1 ? p2 : p1)); hazards = hazards.filter(h => h.alive);
       p1.updatePose(); p2.updatePose();
     }
-    PADS.forEach(p => p.tick());
+    this.pads.forEach(p => p.tick());
     this.stepFx();
   },
   stepFx() {
@@ -404,7 +411,7 @@ function drawHUD(c) {
     // name + pips
     c.font = '900 20px Orbitron,Arial'; c.textAlign = left ? 'left' : 'right'; c.fillStyle = '#fff'; c.shadowColor = f.d.glow; c.shadowBlur = 10;
     c.fillText(f.d.name, left ? x + 4 : x + bw - 4, y + bh + 24); c.shadowBlur = 0;
-    const tag = GAME.mode === '2p' ? (left ? 'P1' : 'P2') : (left ? 'P1' : (GAME.mode === 'training' ? 'DUMMY' : 'CPU · ' + DIFFS[GAME.ai ? GAME.ai.lv : 1]));
+    const tag = GAME.mode === 'online' ? ((i === NET.me ? 'YOU · ' : 'RIVAL · ') + (NET.names[i] || '')) : GAME.mode === '2p' ? (left ? 'P1' : 'P2') : (left ? 'P1' : (GAME.mode === 'training' ? 'DUMMY' : 'CPU · ' + DIFFS[GAME.ai ? GAME.ai.lv : 1]));
     c.font = '700 12px Orbitron,Arial'; c.fillStyle = left ? '#00c6ff' : '#ff3b5c'; c.fillText(tag, left ? x + 4 : x + bw - 4, y - 8);
     for (let r = 0; r < GAME.need(); r++) {
       const px = left ? x + bw - 14 - r * 24 : x + 14 + r * 24, py = y + bh + 18;
@@ -441,6 +448,8 @@ function drawHUD(c) {
   c.fillText(secs, 0, 2); c.restore();
   c.save(); c.font = '700 12px Orbitron,Arial'; c.textAlign = 'center'; c.fillStyle = '#8aa4bf';
   c.fillText(GAME.mode === 'survival' && GAME.survival ? `SURVIVAL · WINS ${GAME.survival.wins} · BEST ${SAVE.stats.survivalBest} · ${GAME.arena.name}` : GAME.mode === 'arcade' ? `ARCADE ${GAME.ladderIdx + 1}/${GAME.ladder.length} · ${GAME.arena.name}` : `${GAME.arena.name}`, W / 2, 104);
+  if (GAME.mode === 'online') { c.fillStyle = NET.rtt > 120 ? '#ff3b5c' : '#4ade80'; c.fillText(`ONLINE · PING ${NET.rtt | 0} ms · DELAY ${NET.D}f`, W / 2, 124);
+    if (NET.stall > 45) { c.font = '900 22px Orbitron,Arial'; c.fillStyle = '#ffd166'; c.fillText(`WAITING FOR RIVAL… ${((NET.stall) / 60).toFixed(1)}s`, W / 2, 330); } }
   if (GAME.mode === 'training') { c.fillStyle = '#ffd166'; c.fillText(`DUMMY: ${GAME.ai.dummy} · [TAB] change`, W / 2, 124); }
   if (GAME.state === 'terminate') { c.font = '900 20px Orbitron,Arial'; c.fillStyle = '#ff3b5c'; c.fillText(`TERMINATE · ${(GAME.termT / 60).toFixed(1)}s`, W / 2, 150); }
   c.restore();
@@ -451,7 +460,12 @@ let lastT = performance.now(), acc = 0;
 const STEP = 1000 / 60;
 function frame(now) {
   acc += Math.min(100, now - lastT); lastT = now;
-  while (acc >= STEP) { GAME.step(); acc -= STEP; }
+  while (acc >= STEP) {
+    if (NET.running) { if (!NET.tick()) { acc = Math.min(acc, STEP); break; } }
+    else GAME.step();
+    acc -= STEP;
+  }
+  if (NET.running) NET.idle();
   render();
   requestAnimationFrame(frame);
 }
